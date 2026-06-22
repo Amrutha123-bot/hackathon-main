@@ -1,0 +1,1 @@
+# question - retrieve chunks - attach chunks to prompt to llm - get answer from llm  - answer to user

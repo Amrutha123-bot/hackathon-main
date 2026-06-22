@@ -1,0 +1,1 @@
+#chunk is converted into embedding vectors (text to numbers)

@@ -1,0 +1,1 @@
+#we retrieve the relevent vectors based on the question and the vector stored in the database

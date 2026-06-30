@@ -38,3 +38,4 @@ class EmbeddingService:
                     raise ValueError(f"Unsupported embedding provider: {self.provider}")
         except Exception as e:
                 logger.error(f"Failed to initialize embedding model: {e}")
+#returns the embedding model that can be used for embedding the embedding will be done by the chroma internally based on the model given by this module

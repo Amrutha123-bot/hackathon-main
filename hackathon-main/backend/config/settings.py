@@ -11,4 +11,4 @@ LLM_PROVIDER = 'gemini'
 LLM_MODEL = 'gemini-2.5-pro'
 VECTOR_DB_PROVIDER = 'chroma'
 SEARCH_TYPE = 'similarity'
-TOP_K = 5
+TOP_K = 5 #best 5 chunks

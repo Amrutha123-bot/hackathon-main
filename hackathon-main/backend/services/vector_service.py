@@ -18,7 +18,7 @@ import os
 from langchain_core.documents import Document
 from services.embedding_service import EmbeddingService
 from langchain_chroma import Chroma
-from settings import VECTOR_STORE_PATH #to keep the created vector DB persistencef
+from config.settings import (VECTOR_STORE_PATH, SEARCH_TYPE, TOP_K) #to keep the created vector DB persistencef
 logger=logging.getLogger(__name__)
 #a langchain model converts the embedding model and chunks into a vector database which is Chroma.from_documents
 #chroma internally has the vector+original chunk+metadata stored in a DB
@@ -42,7 +42,6 @@ class VectorService:
     def create_vector_store(self, documents: List[Document]):
         if self.vector_store is not None:
             return self.vector_store
-        self.embedding_service = EmbeddingService()
         embedding_model = self.embedding_service.get_embedding_model()
         self.vector_store = Chroma.from_documents(documents, embedding_model, persist_directory=self.db_path)
         return self.vector_store
@@ -75,4 +74,7 @@ class VectorService:
 #handles embedding questions - similarity search - return the top matches
 #so here we are just gonna create the search engine
     def get_retriever(self):
-        pass
+        if self.vector_store is None:
+            return self.load_vector_store().as_retriever(search_type=SEARCH_TYPE, search_kwargs={"k": TOP_K})
+        retriever = self.vector_store.as_retriever(search_type=SEARCH_TYPE, search_kwargs={'k': TOP_K})
+        return retriever

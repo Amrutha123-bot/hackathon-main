@@ -78,3 +78,5 @@ class VectorService:
             return self.load_vector_store().as_retriever(search_type=SEARCH_TYPE, search_kwargs={"k": TOP_K})
         retriever = self.vector_store.as_retriever(search_type=SEARCH_TYPE, search_kwargs={'k': TOP_K})
         return retriever
+    
+#vector service will build the retriever 

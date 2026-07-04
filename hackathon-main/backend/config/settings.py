@@ -9,11 +9,12 @@ EMBEDDING_PROVIDER = "huggingface"
 EMBEDDING_MODEL= "BAAI/bge-small-en-v1.5"#good semantic retrival quality, light enough for local development, popular for production RAG systems, faster than very large embedding models
 LLM_PROVIDER = 'gemini'
 LLM_MODEL = 'gemini-2.5-pro'
+TEMPERATURE = 2
+MAX_OUTPUT_TOKEN = 3
 VECTOR_DB_PROVIDER = 'chroma'
 SEARCH_TYPE = 'similarity'
 TOP_K = 5 #best 5 chunks
-SYSTEM_PROMPT = 
-"""
+SYSTEM_PROMPT = """
 ========================================
 SYSTEM INSTRUCTIONS
 ========================================

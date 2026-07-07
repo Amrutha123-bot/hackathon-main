@@ -14,6 +14,7 @@ MAX_OUTPUT_TOKEN = 3
 VECTOR_DB_PROVIDER = 'chroma'
 SEARCH_TYPE = 'similarity'
 TOP_K = 5 #best 5 chunks
+DOCUMENT_DIRECTORY = 'k'
 SYSTEM_PROMPT = """
 ========================================
 SYSTEM INSTRUCTIONS

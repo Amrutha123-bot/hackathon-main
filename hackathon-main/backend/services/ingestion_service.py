@@ -22,16 +22,20 @@ class IngestionService:
             logger.info(f"Starting document ingestion from {directory_path}")
             load_result = self.pdf_service.load_documents(directory_path)
             if not load_result.documents:#here document is an obj but not a list
-                logger.error(f"No valid documents were loaded.")
+                # logger.error(f"No valid documents were loaded.")
                 raise ValueError("No valid documents were loaded.")
             if load_result.failed_files:
                 logger.warning(f"Failed to load {len(load_result.failed_files)} file(s).")
             chunks = self.chunk_service.split_documents(load_result.documents)
-            vector_store = self.vector_service.create_vector_store(chunks)
-            logger.info("f"Processed {len(load_result.documents)} documents into {len(chunks)} chunks."")
+            try:
+                vector_store = self.vector_service.load_vector_store()
+                vector_store = self.vector_service.add_documents(chunks)
+            except FileNotFoundError:
+                vector_store = self.vector_service.create_vector_store(chunks)
+            logger.info(f"Processed {len(load_result.documents)} documents into {len(chunks)} chunks.")
             return vector_store
         except Exception as e:
-            logger.error("Error during document ingestion: {e}")
+            logger.error(f"Error during document ingestion: {e}")
             raise
 
 

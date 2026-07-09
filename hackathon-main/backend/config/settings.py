@@ -15,7 +15,7 @@ VECTOR_DB_PROVIDER = 'chroma'
 SEARCH_TYPE = 'similarity'
 TOP_K = 5 #best 5 chunks
 DOCUMENT_DIRECTORY = 'k'
-SUPPORTED_FILE_TYPES = {'.pdf', '.docx', '.txt'}
+SUPPORTED_EXTENSIONS = {'.pdf', '.docx', '.txt'}
 SYSTEM_PROMPT = """
 ========================================
 SYSTEM INSTRUCTIONS

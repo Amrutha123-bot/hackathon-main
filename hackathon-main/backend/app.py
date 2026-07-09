@@ -5,7 +5,7 @@ import os
 from fastapi import FastAPI, UploadFile, File
 from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
-from config.settings import (DOCUMENT_DIRECTORY, SUPPORTED_FILE_TYPES, UPLOAD_DIRECTORY)
+from config.settings import (DOCUMENT_DIRECTORY, SUPPORTED_EXTENSIONS, UPLOAD_DIRECTORY)
 import logging
 from typing import List
 import shutil#to copy the uploaded contents
@@ -31,21 +31,34 @@ def upload_documents(files: List[UploadFile]=File(...)):#simply save the uploade
         try:
             filename=file.filename
             extension = os.path.splitext(filename)[1].lower()
-            if extension not in SUPPORTED_FILE_TYPES:
+            if extension not in SUPPORTED_EXTENSIONS:
                 logger.warning(f"File type not supported: {filename}")
                 failed_files.append(filename)
                 continue
             destination = os.path.join(UPLOAD_DIRECTORY, filename)
             with open(destination, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)#for saving
+                shutil.copyfileobj(file.file, buffer)#save all the files before uploading them in the directory
             uploaded_files.append(filename)
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to save {filename}: {e}")
             failed_files.append(filename)
-            return {
-                "message": "No valid files were uploaded",
-            }
+            continue
+    if not uploaded_files:
+        return {
+            "message": "No valid files were uploaded.",
+            "uploaded_files": [],
+            "failed_files": failed_files
+        }
     if uploaded_files:
-        ingestion_service.ingest_documents(UPLOAD_DIRECTORY)
+        try:
+            ingestion_service.ingest_documents(UPLOAD_DIRECTORY)
+        except Exception as e:
+            logger.error(f"Error during document ingestion: {e}")
+            raise
+    logger.info(
+    f"Successfully uploaded {len(uploaded_files)} file(s). "
+    f"Failed: {len(failed_files)}."
+)
     return {
         "message": "Upload completed successfully.",
         "uploaded_files": uploaded_files,

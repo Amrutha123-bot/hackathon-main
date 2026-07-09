@@ -3,6 +3,7 @@
 #we need a bridge to connect the browser and the server - API
 import os
 from fastapi import FastAPI, UploadFile, File
+from pydantic import BaseModel
 from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
 from config.settings import (DOCUMENT_DIRECTORY, SUPPORTED_EXTENSIONS, UPLOAD_DIRECTORY)
@@ -56,16 +57,39 @@ def upload_documents(files: List[UploadFile]=File(...)):#simply save the uploade
             logger.error(f"Error during document ingestion: {e}")
             raise
     logger.info(
-    f"Successfully uploaded {len(uploaded_files)} file(s). "
-    f"Failed: {len(failed_files)}."
-)
+        f"Successfully uploaded {len(uploaded_files)} file(s). "
+        f"Failed: {len(failed_files)}."
+    )
     return {
         "message": "Upload completed successfully.",
         "uploaded_files": uploaded_files,
         "failed_files": failed_files
     }
-        
 
+class QuestionRequest(BaseModel):
+    question: str
+# request = QuestionRequest(...)    #question will be received from the http request by FASTAPI
+@app.post("/ask")
+#receive req-extract questio - epty? - yes (error) - no - RAGService.answer_question() - return answer
+def ask_question(request: QuestionRequest):#as the input is in the form of jso n
+
+    ques = request.question.strip()
+    if not ques:
+        logger.error(f"Enter a question.")
+        return {
+                "message": "Please enter a valid question."
+            }
+    logger.info(f"Received question: {ques}")
+    try:
+        ans=rag_service.answer_question(ques)
+        logger.info("Question answered successfully.")
+    except Exception as e:
+        logger.error(f"Error in generating response: {e}")
+        raise
+    return {
+                "question": ques,
+                "answer": ans
+        }
 
 
 # React

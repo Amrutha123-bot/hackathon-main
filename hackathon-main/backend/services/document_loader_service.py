@@ -24,7 +24,7 @@ class DocumentLoadResult:
     failed_files: List[str]
     total_loaded: int
 
-class PDFService:
+class DocumentLoaderService:
     def get_loader(self, file_path: str):
      #unstructured pdf loader#the word doc loader#the text loader
         extension = os.path.splitext(file_path)[1].lower()
@@ -68,10 +68,10 @@ class PDFService:
         return DocumentLoadResult(documents=documents, failed_files=failed_files, total_loaded=len(documents))
     
 #to test the module 1 code
-pdf_service = PDFService()
-result = pdf_service.load_documents('path/to/your/directory', strict_mode=False)
-print(result.total_loaded)
-print(result.failed_files)
+# pdf_service = PDFService()
+# result = pdf_service.load_documents('path/to/your/directory', strict_mode=False)
+# print(result.total_loaded)
+# print(result.failed_files)
 
-for doc in result.documents:
-    print(doc.metadata)
+# for doc in result.documents:
+#     print(doc.metadata)

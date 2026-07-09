@@ -3,7 +3,7 @@
 #i/o - the policy pdf doc, o/p - the relevant chunk docs
 #main purpose is to build the vector store database and not to return the content in it or u can return a summary saying that these many docs, chunks are successfully inserted
 import logging 
-from services.pdf_service import PDFService
+from services.document_loader_service import DocumentLoaderService
 from services.chunk_service import ChunkService
 from services.vector_service import VectorService
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class IngestionService:
 
     def __init__(self):
-        self.pdf_service = PDFService()
+        self.pdf_service = DocumentLoaderService()
         self.chunk_service = ChunkService()
         self.vector_service = VectorService()
     

@@ -11,7 +11,7 @@
 
 #recursiveTextSplitter - smart way - priority- nextline, . , , we use langchain to do that
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from config.settings import (CHUNK_SIZE, CHUNK_OVERLAP)#instead of creating a splitter every time use the splitter in the
 from typing import List
 from langchain_core.documents import Document

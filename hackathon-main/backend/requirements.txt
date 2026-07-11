@@ -1,0 +1,46 @@
+# ===========================
+# FastAPI Backend
+# ===========================
+fastapi
+uvicorn
+python-multipart
+pydantic
+
+# ===========================
+# LangChain
+# ===========================
+langchain
+langchain-core
+langchain-community
+langchain-text-splitters
+
+# ===========================
+# Google Gemini
+# ===========================
+langchain-google-genai
+google-generativeai
+
+# ===========================
+# Vector Database
+# ===========================
+langchain-chroma
+chromadb
+
+# ===========================
+# Document Loaders
+# ===========================
+pypdf
+python-docx
+unstructured
+
+# ===========================
+# Environment Variables
+# ===========================
+python-dotenv
+
+# ===========================
+# Tokenizer (used by LangChain)
+# ===========================
+tiktoken
+
+# pip install langchain langchain-core langchain-community langchain-text-splitters langchain-google-genai langchain-huggingface langchain-chroma chromadb google-generativeai pypdf python-docx unstructured python-dotenv tiktoken sentence-transformers fastapi uvicorn python-multipart

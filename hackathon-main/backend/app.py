@@ -2,13 +2,14 @@
 #the web server - react runs browser and the backend runs on a server
 #we need a bridge to connect the browser and the server - API
 import os
-from fastapi import FastAPI, UploadFile, File
-from pydantic import BaseModel
+from fastapi import (FastAPI, UploadFile, File)
 from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
 from config.settings import (DOCUMENT_DIRECTORY, SUPPORTED_EXTENSIONS, UPLOAD_DIRECTORY)
 import logging
-from typing import List
+from schema.request import QuestionRequest
+from schema.response import (UploadResponse, QuestionResponse, HealthResponse)
+from typing import list, Annotated
 import shutil#to copy the uploaded contents
 
 logger = logging.getLogger(__name__)
@@ -17,14 +18,14 @@ app=FastAPI()#obj of web application
 ingestion_service = IngestionService()
 rag_service = RAGService()
 
-@app.get("/")
+@app.get("/", response_model=HealthResponse)
 def home():
     logger.info("Health check endpoint called.")
     return { "message": "Insurance RAG API is running."}
 #how does FastAPI know which python function to execute when there are some 100s of function - we have decorators(request, function to be executed)
 
-@app.post("/upload")#list of docs coming from the request of post method
-def upload_documents(files: List[UploadFile]=File(...)):#simply save the uploaded files
+@app.post("/upload", response_model=UploadResponse)#list of docs coming from the request of post method
+def upload_documents(files: Annotated[list[UploadFile], File(...)]):#simply save the uploaded files
     logger.info(f"Received {len(files)} files for upload.")
     uploaded_files = []
     failed_files = []
@@ -66,10 +67,9 @@ def upload_documents(files: List[UploadFile]=File(...)):#simply save the uploade
         "failed_files": failed_files
     }
 
-class QuestionRequest(BaseModel):
-    question: str
+
 # request = QuestionRequest(...)    #question will be received from the http request by FASTAPI
-@app.post("/ask")
+@app.post("/ask", response_model=QuestionResponse)
 #receive req-extract questio - epty? - yes (error) - no - RAGService.answer_question() - return answer
 def ask_question(request: QuestionRequest):#as the input is in the form of jso n
 

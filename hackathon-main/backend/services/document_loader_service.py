@@ -10,7 +10,6 @@ import logging
 from datetime import datetime
 # from pydoc import doc
 
-from click import File
 # from langchain_community.document_loaders import (TextLoader, UnstructuredPDFLoader, UnstructuredWordDocumentLoader)
 from langchain_community.document_loaders import (
     TextLoader,

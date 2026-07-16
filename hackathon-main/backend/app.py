@@ -7,9 +7,10 @@ from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
 from config.settings import (DOCUMENT_DIRECTORY, SUPPORTED_EXTENSIONS, UPLOAD_DIRECTORY)
 import logging
+from fastapi.middleware.cors import CORSMiddleware
 from schema.request import QuestionRequest
 from schema.response import (UploadResponse, QuestionResponse, HealthResponse)
-from typing import list, Annotated
+from typing import List
 import shutil#to copy the uploaded contents
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,15 @@ logger = logging.getLogger(__name__)
 app=FastAPI()#obj of web application
 ingestion_service = IngestionService()
 rag_service = RAGService()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 @app.get("/", response_model=HealthResponse)
 def home():
     logger.info("Health check endpoint called.")
@@ -25,8 +34,9 @@ def home():
 #how does FastAPI know which python function to execute when there are some 100s of function - we have decorators(request, function to be executed)
 
 @app.post("/upload", response_model=UploadResponse)#list of docs coming from the request of post method
-def upload_documents(files: Annotated[list[UploadFile], File(...)]):#simply save the uploaded files
+def upload_documents(files: List[UploadFile]= File(...)):#simply save the uploaded files
     logger.info(f"Received {len(files)} files for upload.")
+    os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
     uploaded_files = []
     failed_files = []
     for file in files:
@@ -83,6 +93,7 @@ def ask_question(request: QuestionRequest):#as the input is in the form of jso n
     try:
         ans=rag_service.answer_question(ques)
         logger.info("Question answered successfully.")
+        logger.info(ans)
     except Exception as e:
         logger.error(f"Error in generating response: {e}")
         raise

@@ -7,10 +7,11 @@ UPLOAD_DIRECTORY = "uploaded_docs"
 VECTOR_STORE_PATH = './vector_store'
 EMBEDDING_PROVIDER = "huggingface"
 EMBEDDING_MODEL= "BAAI/bge-small-en-v1.5"#good semantic retrival quality, light enough for local development, popular for production RAG systems, faster than very large embedding models
-LLM_PROVIDER = 'gemini'
-LLM_MODEL = 'gemini-2.5-pro'
-TEMPERATURE = 2
-MAX_OUTPUT_TOKEN = 3
+LLM_PROVIDER = 'groq'
+LLM_MODEL = 'llama-3.3-70b-versatile'
+
+TEMPERATURE = 0.2
+MAX_OUTPUT_TOKEN = 512
 VECTOR_DB_PROVIDER = 'chroma'
 SEARCH_TYPE = 'similarity'
 TOP_K = 5 #best 5 chunks
@@ -18,41 +19,46 @@ DOCUMENT_DIRECTORY = 'k'
 SUPPORTED_EXTENSIONS = {'.pdf', '.docx', '.txt'}
 SYSTEM_PROMPT = """
 ========================================
-SYSTEM INSTRUCTIONS
-========================================
-
-You are an AI assistant specialized in insurance documents.
-
-Answer ONLY using the provided document context.
-
-Do not make assumptions.
-
-If the answer is unavailable, clearly state:
-"I could not find this information in the uploaded documents."
-
-Always cite the source document and page number whenever possible.
-
-========================================
-DOCUMENT CONTEXT
-========================================
-
-<Document 1>
-
-<Document 2>
-
-...
-
-========================================
-USER QUESTION
-========================================
-
-<question>
-
-========================================
 RESPONSE FORMAT
 ========================================
 
-Answer:
+Always answer using the following format.
 
-Sources:
+# 📋 Answer
+
+## ✅ Summary
+
+Give a concise 2–3 sentence summary.
+
+---
+
+## 📖 Details
+
+Explain the answer using:
+- Bullet points
+- Numbered lists
+- Tables whenever suitable
+
+Highlight important values using **bold**.
+
+---
+
+## ⚠️ Important Notes
+
+Mention any exceptions, conditions, limits, exclusions or special cases.
+
+---
+
+## 📚 Sources
+
+Mention:
+- File Name
+- Page Number
+
+Formatting Rules:
+- Leave one blank line after every heading.
+- Leave one blank line between sections.
+- Never write one large paragraph.
+- Keep every bullet on a separate line.
+- Use tables whenever numerical values are involved.
 """

@@ -11,8 +11,12 @@ from datetime import datetime
 # from pydoc import doc
 
 from click import File
-from langchain_community.document_loaders import (TextLoader, UnstructuredPDFLoader, UnstructuredWordDocumentLoader)
-
+# from langchain_community.document_loaders import (TextLoader, UnstructuredPDFLoader, UnstructuredWordDocumentLoader)
+from langchain_community.document_loaders import (
+    TextLoader,
+    PyPDFLoader,
+    Docx2txtLoader
+)
 from dataclasses import dataclass
 from typing import List
 from langchain_core.documents import Document
@@ -29,9 +33,9 @@ class DocumentLoaderService:
      #unstructured pdf loader#the word doc loader#the text loader
         extension = os.path.splitext(file_path)[1].lower()
         if(extension == '.pdf'):
-            return UnstructuredPDFLoader(file_path)
+            return PyPDFLoader(file_path)
         elif extension == '.docx':
-            return UnstructuredWordDocumentLoader(file_path)
+            return Docx2txtLoader(file_path)
         elif extension == '.txt':
             return TextLoader(file_path)
         logger.warning(f"Unsupported file type: {extension}. ")
@@ -58,7 +62,7 @@ class DocumentLoaderService:
                         doc.metadata['file_type']=extension
                         doc.metadata['file_path']=file_path
                         doc.metadata['loaded_at']=datetime.now().isoformat()
-                    documents.append(docs)
+                    documents.extend(docs)
                 except Exception as e:
                     logger.error(f"Error loading file {file_path}: {e}")
                     failed_files.append(file_path)

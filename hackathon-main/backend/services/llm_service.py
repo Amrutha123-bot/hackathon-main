@@ -8,7 +8,15 @@
 import logging 
 from config.settings import (LLM_MODEL, LLM_PROVIDER, TEMPERATURE, MAX_OUTPUT_TOKEN)
 from langchain_google_genai import ChatGoogleGenerativeAI#(prompt - answer)
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
+import os
 
+load_dotenv()
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+print("GOOGLE_API_KEY loaded:", os.getenv("GOOGLE_API_KEY") is not None)
 logger = logging.getLogger(__name__)
 #provider - model name - llm (client object)
 class LLMService:
@@ -24,9 +32,13 @@ class LLMService:
         if self.llm is not None:#return the client not the model name(str)
             return self.llm#this is caching
         
-        if self.provider=="gemini":
+        if self.provider=='groq':
+            logger.info("Initializing Groq LLM...")
+            self.llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name=self.model_name, temperature=TEMPERATURE)
+            return self.llm
+        elif self.provider=="gemini":
             logger.info("Initialising Gemini LLM...")
-            self.llm = ChatGoogleGenerativeAI(model=self.model_name, temperature=TEMPERATURE, max_output_tokens=MAX_OUTPUT_TOKEN)
+            self.llm = ChatGoogleGenerativeAI(model=self.model_name, google_api_key=GOOGLE_API_KEY, temperature=TEMPERATURE, max_output_tokens=MAX_OUTPUT_TOKEN)
             return self.llm#has methods like invoke, stream, batch
         elif self.provider=='openai':
             raise NotImplementedError("OpenAI provider is not implemented yet.")
@@ -42,6 +54,9 @@ class LLMService:
             llm=self.get_llm()
             response = llm.invoke(prompt)#an ai msg obj is returned AImessage(context="....", response_metadata={....}) but we only need the content but not the metadata
             logger.info("LLM response generated successfully.")
+            print("=" * 80)
+            print(response.content)
+            print("=" * 80)
             return response.content
         except Exception as e:
             logger.error(f"Issue during the response: {e}")

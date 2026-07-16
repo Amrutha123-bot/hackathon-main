@@ -20,6 +20,17 @@ class RAGService:
     def answer_question(self, query: str)-> str:
         try:
             logger.info("Loading the response...")
+            greetings = [
+            "hi",
+            "hello",
+            "hey",
+            "good morning",
+            "good afternoon",
+            "good evening"
+        ]
+            if query.lower().strip() in greetings:
+                return ("Hello! 👋 I'm your Insurance Document Assistant.\n\n"
+        "Upload an insurance document and ask me questions about its coverage, waiting periods, claims, exclusions, and more.")
             documents = self.retrieval_service.retrieve_documents(query)
             prompt = self.prompt_service.build_prompt(documents, query)
             answer = self.llm_service.generate_response(prompt)

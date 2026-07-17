@@ -5,8 +5,10 @@ CHUNK_OVERLAP = 150
 SUPPORTED_FILE_TYPES = ['.pdf', '.docx', '.txt']
 UPLOAD_DIRECTORY = "uploaded_docs"
 VECTOR_STORE_PATH = './vector_store'
-EMBEDDING_PROVIDER = "huggingface"
-EMBEDDING_MODEL= "BAAI/bge-small-en-v1.5"#good semantic retrival quality, light enough for local development, popular for production RAG systems, faster than very large embedding models
+# EMBEDDING_PROVIDER = "huggingface"
+# EMBEDDING_MODEL= "BAAI/bge-small-en-v1.5"#good semantic retrival quality, light enough for local development, popular for production RAG systems, faster than very large embedding models
+EMBEDDING_PROVIDER = "gemini"
+EMBEDDING_MODEL = "gemini-embedding-001"
 LLM_PROVIDER = 'groq'
 LLM_MODEL = 'llama-3.3-70b-versatile'
 

@@ -184,11 +184,11 @@ async def startup_event():
 # -------------------- Services --------------------
 
 logger.info("Creating IngestionService...")
-ingestion_service = IngestionService()
+# ingestion_service = IngestionService()
 logger.info("STEP 3: IngestionService created")
 
 logger.info("Creating RAGService...")
-rag_service = RAGService()
+# rag_service = RAGService()
 logger.info("STEP 4: RAGService created")
 
 # -------------------- CORS --------------------
@@ -197,6 +197,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "https://your-frontend.onrender.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -252,6 +253,7 @@ def upload_documents(files: List[UploadFile] = File(...)):
         }
 
     try:
+        ingestion_service = IngestionService()
         ingestion_service.ingest_documents(UPLOAD_DIRECTORY)
 
     except Exception:
@@ -279,6 +281,7 @@ def ask_question(request: QuestionRequest):
     logger.info(f"Received question: {question}")
 
     try:
+        rag_service = RAGService()
         answer = rag_service.answer_question(question)
 
     except Exception:

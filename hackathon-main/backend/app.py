@@ -145,7 +145,7 @@ from typing import List
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from services.document_loader_service import DocumentLoaderService
+from langchain_community.document_loaders import TextLoader
 # from services.ingestion_service import IngestionService
 # from services.rag_service import RAGService
 

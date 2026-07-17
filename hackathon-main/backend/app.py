@@ -146,7 +146,7 @@ from typing import List
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
-# from services.ingestion_service import IngestionService
+from services.ingestion_service import IngestionService
 # from services.rag_service import RAGService
 
 from config.settings import (

@@ -146,10 +146,9 @@ from typing import List
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import langchain_community
-from services.ingestion_service import IngestionService
+# from services.ingestion_service import IngestionService
 # from services.rag_service import RAGService
-from services.document_loader_service import DocumentLoaderService
-
+from services.chunk_service import ChunkService
 from config.settings import (
     DOCUMENT_DIRECTORY,
     SUPPORTED_EXTENSIONS,

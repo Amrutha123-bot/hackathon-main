@@ -148,7 +148,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import langchain_community
 # from services.ingestion_service import IngestionService
 # from services.rag_service import RAGService
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters 
 from config.settings import (
     DOCUMENT_DIRECTORY,
     SUPPORTED_EXTENSIONS,

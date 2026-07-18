@@ -148,6 +148,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import langchain_community
 # from services.ingestion_service import IngestionService
 # from services.rag_service import RAGService
+from services.document_loader_service import DocumentLoaderService
 
 from config.settings import (
     DOCUMENT_DIRECTORY,

@@ -11,11 +11,14 @@ from datetime import datetime
 # from pydoc import doc
 
 # from langchain_community.document_loaders import (TextLoader, UnstructuredPDFLoader, UnstructuredWordDocumentLoader)
-from langchain_community.document_loaders import (
-    TextLoader,
-    PyPDFLoader,
-    Docx2txtLoader
-)
+# from langchain_community.document_loaders import (
+#     TextLoader,
+#     PyPDFLoader,
+#     Docx2txtLoader
+# )
+from pypdf import PdfReader
+from docx import Document as DocxDocument
+from langchain_core.documents import Document
 from dataclasses import dataclass
 from typing import List
 from langchain_core.documents import Document
@@ -28,48 +31,116 @@ class DocumentLoadResult:
     total_loaded: int
 
 class DocumentLoaderService:
-    def get_loader(self, file_path: str):
-     #unstructured pdf loader#the word doc loader#the text loader
-        extension = os.path.splitext(file_path)[1].lower()
-        if(extension == '.pdf'):
-            return PyPDFLoader(file_path)
-        elif extension == '.docx':
-            return Docx2txtLoader(file_path)
-        elif extension == '.txt':
-            return TextLoader(file_path)
-        logger.warning(f"Unsupported file type: {extension}. ")
-        return None
+    # def get_loader(self, file_path: str):
+    #  #unstructured pdf loader#the word doc loader#the text loader
+    #     extension = os.path.splitext(file_path)[1].lower()
+    #     if(extension == '.pdf'):
+    #         return PyPDFLoader(file_path)
+    #     elif extension == '.docx':
+    #         return Docx2txtLoader(file_path)
+    #     elif extension == '.txt':
+    #         return TextLoader(file_path)
+    #     logger.warning(f"Unsupported file type: {extension}. ")
+    #     return None
 
-    def load_documents(self,directory_path: str,strict_mode: bool = False) -> DocumentLoadResult:
-        #try to search for the doc if not found edrror rises#call loader function to load the doc -> add metadata -> store in doc list
+    def load_documents(
+        self,
+        directory_path: str,
+        strict_mode: bool = False
+    ) -> DocumentLoadResult:
+
         documents = []
         failed_files = []
+
         if not os.path.exists(directory_path):
-            raise FileNotFoundError(f"Directory not found: {directory_path}")
+            raise FileNotFoundError(
+                f"Directory not found: {directory_path}"
+            )
+
         for root, dirs, files in os.walk(directory_path):
+
             for file in files:
-                file_path = os.path.join(root, file)#to construct the file path
-                loader = self.get_loader(file_path)
-                if loader is None:
-                    failed_files.append(file_path)
-                    continue
+
+                file_path = os.path.join(root, file)
+                extension = os.path.splitext(file)[1].lower()
+
                 try:
-                    docs=loader.load() #to lad the doc and then use it for text extraction -> doc objects
-                    for doc in docs:
-                        extension = os.path.splitext(file)[1].lower() #metadata is used to know where actually is the answer came from like to get the source
-                        doc.metadata['source']=file
-                        doc.metadata['file_type']=extension
-                        doc.metadata['file_path']=file_path
-                        doc.metadata['loaded_at']=datetime.now().isoformat()
-                    documents.extend(docs)
+
+                    # ---------------- PDF ----------------
+
+                    if extension == ".pdf":
+
+                        reader = PdfReader(file_path)
+
+                        text = ""
+
+                        for page in reader.pages:
+                            text += page.extract_text() or ""
+
+                    # ---------------- DOCX ----------------
+
+                    elif extension == ".docx":
+
+                        doc = DocxDocument(file_path)
+
+                        text = "\n".join(
+                            para.text
+                            for para in doc.paragraphs
+                        )
+
+                    # ---------------- TXT ----------------
+
+                    elif extension == ".txt":
+
+                        with open(
+                            file_path,
+                            "r",
+                            encoding="utf-8"
+                        ) as f:
+
+                            text = f.read()
+
+                    # ---------------- Unsupported ----------------
+
+                    else:
+
+                        logger.warning(
+                            f"Unsupported file type: {extension}"
+                        )
+
+                        failed_files.append(file_path)
+                        continue
+
+                    # Create LangChain Document
+
+                    document = Document(
+                        page_content=text,
+                        metadata={
+                            "source": file,
+                            "file_type": extension,
+                            "file_path": file_path,
+                            "loaded_at": datetime.now().isoformat(),
+                        },
+                    )
+
+                    documents.append(document)
+
                 except Exception as e:
-                    logger.error(f"Error loading file {file_path}: {e}")
+
+                    logger.error(
+                        f"Error loading file {file_path}: {e}"
+                    )
+
                     failed_files.append(file_path)
 
                     if strict_mode:
                         raise
-        return DocumentLoadResult(documents=documents, failed_files=failed_files, total_loaded=len(documents))
-    
+
+        return DocumentLoadResult(
+            documents=documents,
+            failed_files=failed_files,
+            total_loaded=len(documents),
+        )
 #to test the module 1 code
 # pdf_service = PDFService()
 # result = pdf_service.load_documents('path/to/your/directory', strict_mode=False)

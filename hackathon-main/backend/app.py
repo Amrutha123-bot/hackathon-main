@@ -5,7 +5,7 @@
 # from fastapi import (FastAPI, UploadFile, File)
 # from services.ingestion_service import IngestionService
 # from services.rag_service import RAGService
-# from config.settings import (DOCUMENT_DIRECTORY, SUPPORTED_EXTENSIONS, UPLOAD_DIRECTORY)
+# from config.settings import (VECTOR_STORE_PATH, SUPPORTED_EXTENSIONS, UPLOAD_DIRECTORY)
 # import logging
 # from fastapi.middleware.cors import CORSMiddleware
 # from schema.request import QuestionRequest
@@ -150,7 +150,7 @@ from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
 # import langchain
 from config.settings import (
-    DOCUMENT_DIRECTORY,
+    VECTOR_STORE_PATH,
     SUPPORTED_EXTENSIONS,
     UPLOAD_DIRECTORY,
 )
@@ -255,6 +255,8 @@ def upload_documents(files: List[UploadFile] = File(...)):
     try:
         ingestion_service = IngestionService()
         ingestion_service.ingest_documents(UPLOAD_DIRECTORY)
+        logger.info(f"Vector store exists: {os.path.exists(VECTOR_STORE_PATH)}")
+        logger.info(f"Vector store path: {VECTOR_STORE_PATH}")
 
     except Exception:
         logger.exception("Document ingestion failed")

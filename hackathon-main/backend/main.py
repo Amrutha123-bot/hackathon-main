@@ -3,7 +3,7 @@
 import logging 
 from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
-from config.settings import DOCUMENT_DIRECTORY
+from config.settings import VECTOR_STORE_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ def main():
         ingestion_service = IngestionService()
         rag_service = RAGService()
         logger.info("Starting document ingestion...")
-        ingestion_service.ingest_documents(DOCUMENT_DIRECTORY)
+        ingestion_service.ingest_documents(VECTOR_STORE_PATH)
         logger.info("Knowledge base is ready.")
         while True:
             query=input("\nAsk Your question: ").strip()#to remove leading and trailing spaces so it is easy for comparisons

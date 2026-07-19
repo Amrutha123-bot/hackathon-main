@@ -17,7 +17,7 @@ MAX_OUTPUT_TOKEN = 512
 VECTOR_DB_PROVIDER = 'chroma'
 SEARCH_TYPE = 'similarity'
 TOP_K = 5 #best 5 chunks
-DOCUMENT_DIRECTORY = 'k'
+VECTOR_STORE_PATH = 'k'
 SUPPORTED_EXTENSIONS = {'.pdf', '.docx', '.txt'}
 SYSTEM_PROMPT = """
 ========================================

@@ -17,27 +17,31 @@ class RAGService:
         self.llm_service= LLMService()
         
 
-    def answer_question(self, query: str)-> str:
-        try:
-            logger.info("Loading the response...")
-            greetings = [
-            "hi",
-            "hello",
-            "hey",
-            "good morning",
-            "good afternoon",
-            "good evening"
+    def answer_question(self, query: str) -> str:
+        logger.info("Step 1: Entered answer_question")
+
+        greetings = [
+            "hi", "hello", "hey",
+            "good morning", "good afternoon", "good evening"
         ]
-            if query.lower().strip() in greetings:
-                return ("Hello! 👋 I'm your Insurance Document Assistant.\n\n"
-        "Upload an insurance document and ask me questions about its coverage, waiting periods, claims, exclusions, and more.")
-            documents = self.retrieval_service.retrieve_documents(query)
-            prompt = self.prompt_service.build_prompt(documents, query)
-            answer = self.llm_service.generate_response(prompt)
-            return answer
-        except Exception as e:
-            logger.error(f"Error during loading the response: {e}")
-            raise
+
+        if query.lower().strip() in greetings:
+            return "Hello!"
+
+        logger.info("Step 2: Retrieving documents")
+        documents = self.retrieval_service.retrieve_documents(query)
+
+        logger.info(f"Step 3: Retrieved {len(documents)} documents")
+
+        logger.info("Step 4: Building prompt")
+        prompt = self.prompt_service.build_prompt(documents, query)
+
+        logger.info("Step 5: Calling LLM")
+        answer = self.llm_service.generate_response(prompt)
+
+        logger.info("Step 6: Answer generated successfully")
+
+        return answer
 #multiple independent services to complete a workflow
 # User Question
 #       │

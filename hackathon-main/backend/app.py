@@ -143,7 +143,8 @@ import shutil
 import logging
 from typing import List
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile
+from fastapi import File
 from fastapi.middleware.cors import CORSMiddleware
 # import langchain_community
 from services.ingestion_service import IngestionService

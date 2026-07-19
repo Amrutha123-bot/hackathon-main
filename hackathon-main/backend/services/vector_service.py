@@ -44,6 +44,16 @@ class VectorService:
             return self.vector_store
         embedding_model = self.embedding_service.get_embedding_model()
         self.vector_store = Chroma.from_documents(documents, embedding_model, persist_directory=self.db_path)
+        logger.info("Creating vector store...")
+        logger.info(f"Saving vector store at: {self.db_path}")
+
+        self.vector_store = Chroma.from_documents(
+            documents=documents,
+            embedding=embedding_model,
+            persist_directory=self.db_path
+        )
+
+        logger.info("Vector store created successfully.")
         return self.vector_store
         
 #when we ask question - load embedding model even it is present in the create vector function - query vector - run similarity search - relevant chunks 
@@ -56,6 +66,8 @@ class VectorService:
         if os.path.exists(self.db_path):#to check if this folder exists
             self.vector_store=Chroma(persist_directory=self.db_path, embedding_function=embedding_model)
             logger.info(f"Vector store loaded successfully from {self.db_path}")
+            logger.info(f"Checking vector store path: {self.db_path}")
+            logger.info(f"Exists: {os.path.exists(self.db_path)}")
             return self.vector_store
         else:
             raise FileNotFoundError(f"Vector store path {self.db_path} does not exist.")

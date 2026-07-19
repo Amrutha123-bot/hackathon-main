@@ -198,7 +198,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://policy-assistant.vercel.app",
+        "https://policy-assistant-ecru.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],

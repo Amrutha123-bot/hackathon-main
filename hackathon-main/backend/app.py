@@ -198,7 +198,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://policy-ai.vercel.app"
+        "https://policy-ai.vercel.app",
+        "https://policy-ai-taupe.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],

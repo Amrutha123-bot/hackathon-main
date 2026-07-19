@@ -8,7 +8,6 @@
 #we shouldn't care if huggingface, gemini, openai this is called as ABSTRACTION
 import logging
 from config.settings import (EMBEDDING_PROVIDER, EMBEDDING_MODEL)
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 #text is converted to vector here
 logger=logging.getLogger(__name__)
@@ -28,10 +27,7 @@ class EmbeddingService:
                 return self.embedding_model#returning the existing model if present
             
             else:#the FACTORY PATTERN - creates diff objects based on the config like openai or azure etc - based on the configuration appropriate embedding model will be created
-                if self.provider == 'huggingface':
-                    self.embedding_model=HuggingFaceEmbeddings(model_name=self.model_name)
-                    return self.embedding_model
-                elif self.provider == "gemini":
+                if self.provider == "gemini":
                     self.embedding_model=GoogleGenerativeAIEmbeddings(model=self.model_name)
                     return self.embedding_model
                 else:

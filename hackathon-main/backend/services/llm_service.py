@@ -54,9 +54,7 @@ class LLMService:
             llm=self.get_llm()
             response = llm.invoke(prompt)#an ai msg obj is returned AImessage(context="....", response_metadata={....}) but we only need the content but not the metadata
             logger.info("LLM response generated successfully.")
-            print("=" * 80)
-            print(response.content)
-            print("=" * 80)
+            logger.debug("Response length: %d chars", len(response.content))
             return response.content
         except Exception as e:
             logger.error(f"Issue during the response: {e}")

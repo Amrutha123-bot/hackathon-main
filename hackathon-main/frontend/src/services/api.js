@@ -1,4 +1,5 @@
-const BASE_URL =  import.meta.env.VITE_API_URL;
+// const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = "http://127.0.0.1:8000"
 
 /**
  * Upload multiple documents
@@ -19,7 +20,12 @@ export async function uploadDocuments(files) {
         throw new Error("Failed to upload documents.");
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    // Save the collection name returned by the backend
+    localStorage.setItem("collection_name", data.collection_name);
+
+    return data;
 }
 
 /**
@@ -27,8 +33,10 @@ export async function uploadDocuments(files) {
  */
 export async function askQuestion(question) {
 
-    const response = await fetch(`${BASE_URL}/ask`, {
+    // Read the saved collection name
+    const collectionName = localStorage.getItem("collection_name");
 
+    const response = await fetch(`${BASE_URL}/ask`, {
         method: "POST",
 
         headers: {
@@ -37,6 +45,7 @@ export async function askQuestion(question) {
 
         body: JSON.stringify({
             question: question,
+            collection_name: collectionName,
         }),
     });
 

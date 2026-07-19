@@ -17,7 +17,7 @@ class RAGService:
         self.llm_service= LLMService()
         
 
-    def answer_question(self, query: str) -> str:
+    def answer_question(self, query: str, collection_name: str) -> str:
         logger.info("Step 1: Entered answer_question")
 
         greetings = [
@@ -29,7 +29,7 @@ class RAGService:
             return "Hello!"
 
         logger.info("Step 2: Retrieving documents")
-        documents = self.retrieval_service.retrieve_documents(query)
+        documents = self.retrieval_service.retrieve_documents(query, collection_name)
 
         logger.info(f"Step 3: Retrieved {len(documents)} documents")
 

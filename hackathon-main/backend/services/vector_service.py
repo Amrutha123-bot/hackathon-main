@@ -28,6 +28,7 @@ class VectorService:
         self.embedding_service = EmbeddingService()#composition - VectorService doesn't know how embeddings work
         self.vector_store = None #if we have no DB then we create if only we need and then after that we will reuse the same
         self.db_path = VECTOR_STORE_PATH
+        self.current_collection=None
 
     # def create_vector_store(self):
     #         if self.vector_store is not None:#lazy initialization - only create vector store when needed
@@ -39,18 +40,20 @@ class VectorService:
     #         # chunks = chunk_service.split_documents(documents.documents)#as it is a list of documents 
     #         self.vector_store = Chroma.from_documents(chunks, embedding_model, persist_directory=self.db_path)
     #         return self.vector_store
-    def create_vector_store(self, documents: List[Document]):
-        if self.vector_store is not None:
+    def create_vector_store(self, documents: List[Document], collection_name: str):
+        if (self.vector_store is not None and self.current_collection == collection_name):
             return self.vector_store
+        self.current_collection = collection_name
         embedding_model = self.embedding_service.get_embedding_model()
-        self.vector_store = Chroma.from_documents(documents, embedding_model, persist_directory=self.db_path)
+        # self.vector_store = Chroma.from_documents(documents, embedding_model, persist_directory=self.db_path)
         logger.info("Creating vector store...")
         logger.info(f"Saving vector store at: {self.db_path}")
 
         self.vector_store = Chroma.from_documents(
             documents=documents,
             embedding=embedding_model,
-            persist_directory=self.db_path
+            persist_directory=self.db_path,
+            collection_name=collection_name
         )
 
         logger.info("Vector store created successfully.")
@@ -58,13 +61,14 @@ class VectorService:
         
 #when we ask question - load embedding model even it is present in the create vector function - query vector - run similarity search - relevant chunks 
 #to load the existing vector DB
-    def load_vector_store(self):
+    def load_vector_store(self, collection_name: str):
         logger.info(f"Loading vector store from {self.db_path}")
-        if self.vector_store is not None:
+        if (self.vector_store is not None and self.current_collection == collection_name):
             return self.vector_store
         embedding_model = self.embedding_service.get_embedding_model()#obj already created in constructor
         if os.path.exists(self.db_path):#to check if this folder exists
-            self.vector_store=Chroma(persist_directory=self.db_path, embedding_function=embedding_model)
+            self.vector_store=Chroma(persist_directory=self.db_path, embedding_function=embedding_model, collection_name=collection_name)
+            self.current_collection = collection_name
             logger.info(f"Vector store loaded successfully from {self.db_path}")
             logger.info(f"Checking vector store path: {self.db_path}")
             logger.info(f"Exists: {os.path.exists(self.db_path)}")
@@ -73,10 +77,10 @@ class VectorService:
             raise FileNotFoundError(f"Vector store path {self.db_path} does not exist.")
         
 #receive chunked documents - load existing vector store - add docs - persist changes - return updated vector store
-    def add_documents(self, documents: List[Document]):
+    def add_documents(self, documents: List[Document], collection_name: str):
         #to add docs in btw so that no need to start and rebuild the whole process to add 1 more doc
         try:
-            vector_store = self.load_vector_store()
+            vector_store = self.load_vector_store(collection_name)
             vector_store.add_documents(documents)
             logger.info(f"Added {len(documents)} documents to the vector store.")
             return vector_store
@@ -85,10 +89,11 @@ class VectorService:
             raise
 #handles embedding questions - similarity search - return the top matches
 #so here we are just gonna create the search engine
-    def get_retriever(self):
-        if self.vector_store is None:
-            return self.load_vector_store().as_retriever(search_type=SEARCH_TYPE, search_kwargs={"k": TOP_K})
-        retriever = self.vector_store.as_retriever(search_type=SEARCH_TYPE, search_kwargs={'k': TOP_K})
-        return retriever
+    def get_retriever(self, collection_name: str):
+        vector_store = self.load_vector_store(collection_name)
+        return vector_store.as_retriever(
+        search_type=SEARCH_TYPE,
+        search_kwargs={"k": TOP_K}
+    )
     
 #vector service will build the retriever 

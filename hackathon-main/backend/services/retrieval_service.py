@@ -16,9 +16,9 @@ class RetrievalService:
     def __init__(self):
         self.vector_service = VectorService()
 
-    def retrieve_documents(self, query: str)-> List[Document]:#even empty list can be returned
+    def retrieve_documents(self, query: str, collection_name: str)-> List[Document]:#even empty list can be returned
         try:
-            retriever = self.vector_service.get_retriever()
+            retriever = self.vector_service.get_retriever(collection_name)
             relevant_documents = retriever.invoke(query)#no direct retrieve method from langchain
             logger.info(f"Retrieved {len(relevant_documents)} documents for the query: {query}")
             return relevant_documents

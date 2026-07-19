@@ -16,7 +16,7 @@ class IngestionService:
         self.chunk_service = ChunkService()
         self.vector_service = VectorService()
     
-    def ingest_documents(self, directory_path: str):#ingestion_service.ingest_documents("data/")
+    def ingest_documents(self, directory_path: str, collection_name: str):#ingestion_service.ingest_documents("data/")
         # documents=self.pdf_service.load_documents(directory_path)
         try:
             logger.info(f"Starting document ingestion from {directory_path}")
@@ -28,10 +28,10 @@ class IngestionService:
                 logger.warning(f"Failed to load {len(load_result.failed_files)} file(s).")
             chunks = self.chunk_service.split_documents(load_result.documents)
             try:
-                vector_store = self.vector_service.load_vector_store()
-                vector_store = self.vector_service.add_documents(chunks)
+                # vector_store = self.vector_service.load_vector_store(collection_name)
+                vector_store = self.vector_service.add_documents(chunks, collection_name)
             except FileNotFoundError:
-                vector_store = self.vector_service.create_vector_store(chunks)
+                vector_store = self.vector_service.create_vector_store(chunks, collection_name)
             logger.info(f"Processed {len(load_result.documents)} documents into {len(chunks)} chunks.")
             return vector_store
         except Exception as e:

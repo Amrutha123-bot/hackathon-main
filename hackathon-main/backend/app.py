@@ -142,6 +142,7 @@ import os
 import shutil
 import logging
 from typing import List
+import uuid
 
 from fastapi import FastAPI, UploadFile
 from fastapi import File
@@ -252,11 +253,13 @@ def upload_documents(files: List[UploadFile] = File(...)):
             "message": "No valid files were uploaded.",
             "uploaded_files": [],
             "failed_files": failed_files,
+            "collection_name": ""
         }
 
     try:
+        collection_name = f"policy_{uuid.uuid4().hex}"
         ingestion_service = IngestionService()
-        ingestion_service.ingest_documents(UPLOAD_DIRECTORY)
+        ingestion_service.ingest_documents(UPLOAD_DIRECTORY, collection_name)
         logger.info(f"Vector store exists: {os.path.exists(VECTOR_STORE_PATH)}")
         logger.info(f"Vector store path: {VECTOR_STORE_PATH}")
 
@@ -268,6 +271,7 @@ def upload_documents(files: List[UploadFile] = File(...)):
         "message": "Upload completed successfully.",
         "uploaded_files": uploaded_files,
         "failed_files": failed_files,
+        "collection_name": collection_name
     }
 
 # -------------------- Ask --------------------
@@ -276,6 +280,7 @@ def upload_documents(files: List[UploadFile] = File(...)):
 def ask_question(request: QuestionRequest):
 
     question = request.question.strip()
+    collection_name = request.collection_name
 
     if not question:
         return {
@@ -286,7 +291,7 @@ def ask_question(request: QuestionRequest):
 
     try:
         rag_service = RAGService()
-        answer = rag_service.answer_question(question)
+        answer = rag_service.answer_question(question, collection_name)
 
     except Exception:
         logger.exception("Error generating answer")

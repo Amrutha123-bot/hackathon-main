@@ -1,0 +1,66 @@
+.document-list {
+    margin-top: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.document-list h2 {
+    margin-bottom: 20px;
+}
+
+.document-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    border: 1px solid #ddd;
+
+    border-radius: 10px;
+
+    padding: 15px;
+
+    margin-bottom: 15px;
+
+    transition: 0.2s;
+}
+
+.document-card:hover {
+    border-color: #0077ff;
+}
+
+.document-card.active {
+    border: 2px solid #0077ff;
+    background: #eef5ff;
+}
+
+.document-info {
+    flex: 1;
+    cursor: pointer;
+}
+
+.document-info h3 {
+    margin: 0;
+}
+
+.document-info p {
+    margin-top: 8px;
+    color: #666;
+}
+
+.delete-btn {
+    padding: 8px 14px;
+    border: none;
+    background: crimson;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    background: darkred;
+}
+
+.empty {
+    text-align: center;
+}

@@ -2,8 +2,7 @@ import { useState } from "react";
 import { uploadDocuments } from "../services/api";
 import "./UploadBox.css";
 
-export default function UploadBox() {
-
+export default function UploadBox({ refreshDocuments }) {
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
@@ -14,14 +13,12 @@ export default function UploadBox() {
     };
 
     const handleUpload = async () => {
-
         if (files.length === 0) {
             setMessage("Please select at least one document.");
             return;
         }
 
         try {
-
             setLoading(true);
 
             const response = await uploadDocuments(files);
@@ -30,23 +27,18 @@ export default function UploadBox() {
 
             setFiles([]);
 
+            // Refresh document list
+            await refreshDocuments();
         } catch (error) {
-
             console.error(error);
-
             setMessage(error.message);
-
         } finally {
-
             setLoading(false);
-
         }
     };
 
     return (
-
         <div className="upload-card">
-
             <h2>Upload Documents</h2>
 
             <p className="subtitle">
@@ -60,63 +52,30 @@ export default function UploadBox() {
                 onChange={handleFileChange}
             />
 
-            {
+            {files.length > 0 && (
+                <div className="selected-files">
+                    <h3>Selected Files</h3>
 
-                files.length > 0 && (
-
-                    <div className="selected-files">
-
-                        <h3>Selected Files</h3>
-
-                        {
-                            files.map((file, index) => (
-
-                                <div key={index} className="file-item">
-
-                                    📄 {file.name}
-
-                                </div>
-
-                            ))
-                        }
-
-                    </div>
-
-                )
-
-            }
+                    {files.map((file, index) => (
+                        <div key={index} className="file-item">
+                            📄 {file.name}
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <button
                 onClick={handleUpload}
                 disabled={loading}
             >
-
-                {
-
-                    loading
-
-                        ? "Uploading..."
-
-                        : "Upload Documents"
-
-                }
-
+                {loading ? "Uploading..." : "Upload Documents"}
             </button>
 
-            {
-
-                message &&
-
+            {message && (
                 <p className="status">
-
                     {message}
-
                 </p>
-
-            }
-
+            )}
         </div>
-
     );
-
 }

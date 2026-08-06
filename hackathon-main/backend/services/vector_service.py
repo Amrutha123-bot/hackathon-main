@@ -18,6 +18,7 @@ import os
 from langchain_core.documents import Document
 from services.embedding_service import EmbeddingService
 from langchain_chroma import Chroma
+from chromadb import PersistentClient
 from config.settings import (VECTOR_STORE_PATH, SEARCH_TYPE, TOP_K) #to keep the created vector DB persistencef
 logger=logging.getLogger(__name__)
 #a langchain model converts the embedding model and chunks into a vector database which is Chroma.from_documents
@@ -95,5 +96,23 @@ class VectorService:
         search_type=SEARCH_TYPE,
         search_kwargs={"k": TOP_K}
     )
+
+    def delete_collection(self, collection_name: str):
+        try:
+            client = PersistentClient(path=self.db_path)
+
+            client.delete_collection(collection_name)
+
+            logger.info(f"Deleted Chroma collection: {collection_name}")
+
+            if self.current_collection == collection_name:
+                self.vector_store = None
+                self.current_collection = None
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to delete collection {collection_name}: {e}")
+            return False
     
 #vector service will build the retriever 

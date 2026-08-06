@@ -1,0 +1,44 @@
+[
+    {
+        "id": "20d23a73-de45-47f7-9ffc-91d73a82cab9",
+        "filename": "policy2.pdf",
+        "filepath": "uploaded_docs/policy2.pdf",
+        "collection_name": "policy_2",
+        "uploaded_at": "2026-07-31T02:21:38.576540"
+    },
+    {
+        "id": "474d6752-c60c-48f1-b0d9-f13145f7bacf",
+        "filename": "policy2.pdf",
+        "filepath": "uploaded_docs/policy2.pdf",
+        "collection_name": "policy_2",
+        "uploaded_at": "2026-07-31T02:22:14.016342"
+    },
+    {
+        "id": "11cb7c66-6ba5-4d25-a664-1ef17066a5a8",
+        "filename": "policy2.pdf",
+        "filepath": "uploaded_docs/policy2.pdf",
+        "collection_name": "policy_2",
+        "uploaded_at": "2026-07-31T02:24:16.681168"
+    },
+    {
+        "id": "9ba58c81-1d3f-47d2-8aad-d2ef0bc9eea5",
+        "filename": "20241122 - CIS - ASP.pdf",
+        "filepath": "uploaded_docs\\20241122 - CIS - ASP.pdf",
+        "collection_name": "policy_a92cdc7f64f04af6ad6397d7c67af37f",
+        "uploaded_at": "2026-07-31T15:42:52.353692"
+    },
+    {
+        "id": "dc3118f6-703c-4c49-812a-e72f09516dfb",
+        "filename": "20241122 - CIS - ASP.pdf",
+        "filepath": "uploaded_docs\\20241122 - CIS - ASP.pdf",
+        "collection_name": "policy_03ef8d854a9c41428e2c5a8be1ae5048",
+        "uploaded_at": "2026-07-31T15:43:56.606262"
+    },
+    {
+        "id": "e7ef7a5f-3131-4c6d-b83b-f34f0561a9df",
+        "filename": "20230913-CIS-IHIP.pdf",
+        "filepath": "uploaded_docs\\20230913-CIS-IHIP.pdf",
+        "collection_name": "policy_03ef8d854a9c41428e2c5a8be1ae5048",
+        "uploaded_at": "2026-07-31T15:43:56.606262"
+    }
+]

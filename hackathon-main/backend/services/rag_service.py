@@ -30,8 +30,9 @@ class RAGService:
 
         logger.info("Step 2: Retrieving documents")
         documents = self.retrieval_service.retrieve_documents(query, collection_name)
-
-        logger.info(f"Step 3: Retrieved {len(documents)} documents")
+        if not documents:
+            raise ValueError("No documents found.")
+            logger.info(f"Step 3: Retrieved {len(documents)} documents")
 
         logger.info("Step 4: Building prompt")
         prompt = self.prompt_service.build_prompt(documents, query)

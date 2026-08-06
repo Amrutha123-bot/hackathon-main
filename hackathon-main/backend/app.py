@@ -143,13 +143,16 @@ import shutil
 import logging
 from typing import List
 import uuid
-
+from services.vector_service import VectorService
 from fastapi import FastAPI, UploadFile
 from fastapi import File
 from fastapi.middleware.cors import CORSMiddleware
 # import langchain_community
+from fastapi import HTTPException
 from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
+
+from services.document_service import DocumentService
 # import langchain
 from config.settings import (
     VECTOR_STORE_PATH,
@@ -168,13 +171,16 @@ from schema.response import (
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+document_service = DocumentService()
+vector_service = VectorService()
+ingestion_service = IngestionService()
+rag_service = RAGService()
 
-logger.info("STEP 1: Import complete")
+logger.info("All services initialized.")
 
 # -------------------- FastAPI --------------------
 
 app = FastAPI()
-
 logger.info("STEP 2: FastAPI created")
 
 # -------------------- Startup --------------------
@@ -185,13 +191,13 @@ async def startup_event():
 
 # -------------------- Services --------------------
 
-logger.info("Creating IngestionService...")
+# logger.info("Creating IngestionService...")
 # ingestion_service = IngestionService()
-logger.info("STEP 3: IngestionService created")
+# logger.info("STEP 3: IngestionService created")
 
-logger.info("Creating RAGService...")
+# logger.info("Creating RAGService...")
 # rag_service = RAGService()
-logger.info("STEP 4: RAGService created")
+# logger.info("STEP 4: RAGService created")
 
 # -------------------- CORS --------------------
 
@@ -258,8 +264,19 @@ def upload_documents(files: List[UploadFile] = File(...)):
 
     try:
         collection_name = f"policy_{uuid.uuid4().hex}"
-        ingestion_service = IngestionService()
+        # ingestion_service = IngestionService()
         ingestion_service.ingest_documents(UPLOAD_DIRECTORY, collection_name)
+        # ----------------------------
+        # Save document metadata
+        # ----------------------------
+        for filename in uploaded_files:
+            filepath = os.path.join(UPLOAD_DIRECTORY, filename)
+
+            document_service.add_document(
+                filename=filename,
+                filepath=filepath,
+                collection_name=collection_name
+            )
         logger.info(f"Vector store exists: {os.path.exists(VECTOR_STORE_PATH)}")
         logger.info(f"Vector store path: {VECTOR_STORE_PATH}")
 
@@ -274,6 +291,53 @@ def upload_documents(files: List[UploadFile] = File(...)):
         "collection_name": collection_name
     }
 
+# -------------------- Documents --------------------
+
+@app.get("/documents")
+def get_documents():
+    try:
+        documents = document_service.get_all_documents()
+
+        return {
+            "documents": documents
+        }
+
+    except Exception:
+        logger.exception("Failed to fetch documents")
+        raise
+
+@app.delete("/documents/{collection_name}")
+def delete_document(collection_name: str):
+    try:
+        documents = document_service.get_documents_by_collection(collection_name)
+
+        if not documents:
+            raise HTTPException(
+                status_code=404,
+                detail="Collection not found."
+            )
+
+        # vector_service = VectorService()
+
+        vector_service.delete_collection(collection_name)
+
+        document_service.delete_uploaded_files(collection_name)
+
+        document_service.delete_document(collection_name)
+
+        return {
+            "message": "Knowledge base deleted successfully."
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception("Failed to delete knowledge base.")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete knowledge base."
+        )
 # -------------------- Ask --------------------
 
 @app.post("/ask", response_model=QuestionResponse)
@@ -290,7 +354,14 @@ def ask_question(request: QuestionRequest):
     logger.info(f"Received question: {question}")
 
     try:
-        rag_service = RAGService()
+        # rag_service = RAGService()
+        documents = document_service.get_documents_by_collection(collection_name)
+
+        if not documents:
+            raise HTTPException(
+                status_code=404,
+                detail="Collection not found."
+            )
         answer = rag_service.answer_question(question, collection_name)
 
     except Exception:
@@ -301,3 +372,4 @@ def ask_question(request: QuestionRequest):
         "question": question,
         "answer": answer,
     }
+

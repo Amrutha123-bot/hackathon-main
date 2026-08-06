@@ -7,124 +7,75 @@ export default function ChatWindow({
     loading,
     onSend,
     question,
-    setQuestion
+    setQuestion,
 }) {
-
     const bottomRef = useRef(null);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({
-            behavior: "smooth"
+            behavior: "smooth",
         });
     }, [messages, loading]);
 
     const handleSubmit = () => {
-
         if (!question.trim()) return;
-
         onSend();
     };
 
     const handleKeyDown = (e) => {
-
         if (e.key === "Enter") {
             handleSubmit();
         }
-
     };
 
     return (
-
         <div className="chat-container">
-
             <div className="chat-header">
                 <h2>Insurance Assistant</h2>
-                <p>Ask questions about your uploaded documents.</p>
+
+                <p>
+                    Ask questions about the selected knowledge base.
+                </p>
             </div>
 
             <div className="chat-messages">
+                {messages.length === 0 && (
+                    <div className="empty-chat">
+                        Select a knowledge base and ask your first question.
+                    </div>
+                )}
 
-                {
-                    messages.length === 0 && (
-
-                        <div className="empty-chat">
-
-                            Upload documents and ask your first question.
-
+                {messages.map((msg, index) => (
+                    <div
+                        key={index}
+                        className={`message ${msg.role}`}
+                    >
+                        <div className="message-content">
+                            {msg.role === "assistant" ? (
+                                <div className="assistant-message">
+                                    <ReactMarkdown>
+                                        {msg.content}
+                                    </ReactMarkdown>
+                                </div>
+                            ) : (
+                                msg.content
+                            )}
                         </div>
+                    </div>
+                ))}
 
-                    )
-                }
-
-                {
-
-                    messages.map((msg, index) => (
-
-                        <div
-                            key={index}
-                            className={`message ${msg.role}`}
-                        >
-
-                            <div className="message-content">
-
-                                {
-
-                                    msg.role === "assistant"
-
-                                        ? (
-
-                                            <div className="assistant-message">
-
-                                                <ReactMarkdown>
-
-                                                    {msg.content}
-
-                                                </ReactMarkdown>
-
-                                            </div>
-
-                                        )
-
-                                        : (
-
-                                            msg.content
-
-                                        )
-
-                                }
-
-                            </div>
-
+                {loading && (
+                    <div className="message assistant">
+                        <div className="message-content">
+                            🤖 AI is analyzing your documents...
                         </div>
-
-                    ))
-
-                }
-
-                {
-
-                    loading && (
-
-                        <div className="message assistant">
-
-                            <div className="message-content">
-
-                                🤖 AI is analyzing your documents...
-
-                            </div>
-
-                        </div>
-
-                    )
-
-                }
+                    </div>
+                )}
 
                 <div ref={bottomRef}></div>
-
             </div>
 
             <div className="chat-input">
-
                 <input
                     type="text"
                     placeholder="Ask a question..."
@@ -139,11 +90,7 @@ export default function ChatWindow({
                 >
                     Ask
                 </button>
-
             </div>
-
         </div>
-
     );
-
 }

@@ -68,5 +68,7 @@ Formatting Rules:
 - Keep every bullet on a separate line.
 - Use tables whenever numerical values are involved.
 """
-
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60

@@ -143,12 +143,15 @@ import shutil
 import logging
 from typing import List
 import uuid
+
 from services.vector_service import VectorService
 from fastapi import FastAPI, UploadFile
 from fastapi import File
 from fastapi.middleware.cors import CORSMiddleware
 # import langchain_community
 from fastapi import HTTPException
+from fastapi import Depends
+from auth.auth_dependency import get_current_user
 from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
 
@@ -212,7 +215,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+@app.get("/me")
+def get_me(user=Depends(get_current_user)):
+    return {
+        "id": str(user.id),
+        "email": user.email
+    }
 # -------------------- Health --------------------
 
 @app.get("/", response_model=HealthResponse)
@@ -225,9 +233,9 @@ def home():
 # -------------------- Upload --------------------
 
 @app.post("/upload", response_model=UploadResponse)
-def upload_documents(files: List[UploadFile] = File(...)):
+def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_current_user)):
     logger.info(f"Received {len(files)} files for upload.")
-
+    logger.info(f"Authenticated user: {user.id}")
     os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
     uploaded_files = []

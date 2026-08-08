@@ -4,7 +4,7 @@ from services.supabase_service import SupabaseService
 class AuthService:
 
     def __init__(self):
-        self.supabase = SupabaseService().get_client()
+        self.supabase = SupabaseService().get_client()#we get our already created client
 
     def verify_token(self, access_token: str):
         """verify the incoming jwt token"""

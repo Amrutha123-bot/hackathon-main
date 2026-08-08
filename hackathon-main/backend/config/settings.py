@@ -68,7 +68,5 @@ Formatting Rules:
 - Keep every bullet on a separate line.
 - Use tables whenever numerical values are involved.
 """
-SUPABASE_URL='https://bdkbqtujrphaaqhjjwif.supabase.co'
-SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJka2JxdHVqcnBoYWFxaGpqd2lmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MjYwNTQsImV4cCI6MjEwMTUwMjA1NH0.aaZw1mU_LwyA6VALhCNvbsw36m7SaYSn2lEujHGQryo'
-SUPABASE_SERVICE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJka2JxdHVqcnBoYWFxaGpqd2lmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NTkyNjA1NCwiZXhwIjoyMTAxNTAyMDU0fQ.2cI78JwL3dP0X7PWAnfx5dDYpEGqdVhzqXuYzmiZgak'
+
 ACCESS_TOKEN_EXPIRE_MINUTES = 60

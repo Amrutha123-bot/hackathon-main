@@ -265,18 +265,8 @@ def upload_documents(files: List[UploadFile] = File(...)):
     try:
         collection_name = f"policy_{uuid.uuid4().hex}"
         # ingestion_service = IngestionService()
-        ingestion_service.ingest_documents(UPLOAD_DIRECTORY, collection_name)
-        # ----------------------------
-        # Save document metadata
-        # ----------------------------
-        for filename in uploaded_files:
-            filepath = os.path.join(UPLOAD_DIRECTORY, filename)
-
-            document_service.add_document(
-                filename=filename,
-                filepath=filepath,
-                collection_name=collection_name
-            )
+        ingestion_service.ingest_documents(directory_path=UPLOAD_DIRECTORY, collection_name=collection_name, uploaded_files=uploaded_files)
+        
         logger.info(f"Vector store exists: {os.path.exists(VECTOR_STORE_PATH)}")
         logger.info(f"Vector store path: {VECTOR_STORE_PATH}")
 
@@ -319,7 +309,7 @@ def delete_document(collection_name: str):
 
         # vector_service = VectorService()
 
-        vector_service.delete_collection(collection_name)
+        vector_service.delete_collection(collection_name)#chroma collection is deleted
 
         document_service.delete_uploaded_files(collection_name)
 

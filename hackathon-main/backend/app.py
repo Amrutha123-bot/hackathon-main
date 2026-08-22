@@ -144,6 +144,8 @@ import logging
 from typing import List
 import uuid
 
+from supabase import Client
+from auth.auth_dependency import (get_current_user, get_user_supabase_client)
 from services.vector_service import VectorService
 from fastapi import FastAPI, UploadFile
 from fastapi import File
@@ -174,7 +176,6 @@ from schema.response import (
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-document_service = DocumentService()
 vector_service = VectorService()
 ingestion_service = IngestionService()
 rag_service = RAGService()
@@ -233,7 +234,7 @@ def home():
 # -------------------- Upload --------------------
 
 @app.post("/upload", response_model=UploadResponse)
-def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_current_user)):
+def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):
     logger.info(f"Received {len(files)} files for upload.")
     logger.info(f"Authenticated user: {user.id}")
     os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
@@ -273,7 +274,7 @@ def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_curre
     try:
         collection_name = f"policy_{uuid.uuid4().hex}"
         # ingestion_service = IngestionService()
-        ingestion_service.ingest_documents(directory_path=UPLOAD_DIRECTORY, collection_name=collection_name, uploaded_files=uploaded_files)
+        ingestion_service.ingest_documents(directory_path=UPLOAD_DIRECTORY, collection_name=collection_name, uploaded_files=uploaded_files, user_id=str(user.id), supabase=supabase)
         
         logger.info(f"Vector store exists: {os.path.exists(VECTOR_STORE_PATH)}")
         logger.info(f"Vector store path: {VECTOR_STORE_PATH}")
@@ -292,8 +293,9 @@ def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_curre
 # -------------------- Documents --------------------
 
 @app.get("/documents")
-def get_documents():
+def get_documents(user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):
     try:
+        document_service = DocumentService(supabase)
         documents = document_service.get_all_documents()
 
         return {
@@ -305,8 +307,9 @@ def get_documents():
         raise
 
 @app.delete("/documents/{collection_name}")
-def delete_document(collection_name: str):
+def delete_document(collection_name: str, user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):
     try:
+        document_service = DocumentService(supabase)
         documents = document_service.get_documents_by_collection(collection_name)
 
         if not documents:
@@ -339,21 +342,20 @@ def delete_document(collection_name: str):
 # -------------------- Ask --------------------
 
 @app.post("/ask", response_model=QuestionResponse)
-def ask_question(request: QuestionRequest):
+def ask_question(request: QuestionRequest, user=Depends(get_current_user), supabase: Client=Depends(get_user_supabase_client)):
 
     question = request.question.strip()
     collection_name = request.collection_name
 
     if not question:
-        return {
-            "message": "Please enter a valid question."
-        }
+        raise HTTPException(status_code=400, detail="Please enter a valid question.")
 
     logger.info(f"Received question: {question}")
 
     try:
         # rag_service = RAGService()
-        documents = document_service.get_documents_by_collection(collection_name)
+        document_service=DocumentService(supabase)
+        documents = document_service.get_documents_by_collection(collection_name)#authorization check
 
         if not documents:
             raise HTTPException(
@@ -361,13 +363,16 @@ def ask_question(request: QuestionRequest):
                 detail="Collection not found."
             )
         answer = rag_service.answer_question(question, collection_name)
+        return {
+                "question": question,
+                "answer": answer,
+            }
+    except HTTPException:
+        raise
 
     except Exception:
         logger.exception("Error generating answer")
-        raise
+        raise HTTPException(status_code=500, detail="Failed to generate answer.")
 
-    return {
-        "question": question,
-        "answer": answer,
-    }
+    
 

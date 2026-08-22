@@ -6,21 +6,23 @@ import os #check if the file exists and manage paths
 from datetime import datetime #store upload timestamps
 import uuid #generate unique ids for documents
 from services.supabase_service import SupabaseService
+from supabase import Client
 
 logger = logging.getLogger(__name__)
 
 class DocumentService:
 
-    def __init__(self):
-        self.supabase = SupabaseService().get_client()
-        self.table_name='documents'
-    def add_document(self, filename: str, filepath: str, collection_name: str):
-        documents=self.load_documents()
+    def __init__(self, supabase: Client):
+        self.supabase = supabase
+        self.table_name="documents" #this is for documents.json
+        
+    def add_document(self, user_id: str, filename: str, filepath: str, collection_name: str):
+        # documents=self.load_documents() this is for documents.json
         self.table_name="documents"
 
         document = {
+            "user_id": user_id,
             "filename": filename,
-            "user_id": None,
             "storage_path": filepath,
             "collection_name": collection_name,
         }
@@ -44,12 +46,8 @@ class DocumentService:
         return response.data
 
     def delete_document(self, collection_name: str):
-        # documents = self.load_documents()
-        documents=self.get_doucments_by_collection(collection_name)
-
-        if not documents:
-            return False
-        (self.supabase.table(self.table_name).delete().eq("collection_name", collection_name).execute())
+        
+        response=self.supabase.table(self.table_name).delete().eq("collection_name", collection_name).execute()
         # filtered_documents = [
         #     document
         #     for document in documents
@@ -61,7 +59,7 @@ class DocumentService:
 
         # self.save_documents(filtered_documents) as we have been shifted from document.json to supabase
         logger.info(f"Deleted document metadata for collection: " f"{collection_name}")
-        return True
+        return response.data
 
     def delete_uploaded_files(self, collection_name: str):
         documents = self.get_documents_by_collection(collection_name)
@@ -75,3 +73,5 @@ class DocumentService:
                     logger.info(f"Deleted file: {filepath}")
             except Exception:
                 logger.exception(f"Failed to delete file: {filepath}")
+
+#service has no idea where the client came from 

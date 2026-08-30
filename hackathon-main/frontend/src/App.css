@@ -43,3 +43,23 @@ main{
     align-items:center;
 
 }
+.logout-btn {
+    padding: 9px 16px;
+
+    border: 1px solid #dbeafe;
+    border-radius: 8px;
+
+    background: white;
+    color: #2563eb;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+    background: #eff6ff;
+}

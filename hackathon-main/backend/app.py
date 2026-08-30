@@ -235,6 +235,7 @@ def home():
 
 @app.post("/upload", response_model=UploadResponse)
 def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):
+    document_service = DocumentService(supabase)
     logger.info(f"Received {len(files)} files for upload.")
     logger.info(f"Authenticated user: {user.id}")
     os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
@@ -249,6 +250,18 @@ def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_curre
 
             if extension not in SUPPORTED_EXTENSIONS:
                 logger.warning(f"Unsupported file: {filename}")
+                failed_files.append(filename)
+                continue
+
+            existing_documents = document_service.get_document_by_filename(
+                user_id=str(user.id),
+                filename=filename
+            )
+
+            if existing_documents:
+                logger.warning(
+                    f"Duplicate file rejected: {filename}"
+                )
                 failed_files.append(filename)
                 continue
 
@@ -305,6 +318,33 @@ def get_documents(user=Depends(get_current_user), supabase: Client = Depends(get
     except Exception:
         logger.exception("Failed to fetch documents")
         raise
+
+@app.delete("/documents/file/{document_id}")
+def delete_file(document_id: str, user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):
+                try:
+                    document_service = DocumentService(supabase)
+                    document=document_service.get_document_by_id(document_id)
+                    if not document:
+                        raise HTTPException(status_code=404, detail="Document not found.")
+                    filename=document["filename"]
+                    collection_name=document["collection_name"]
+                    logger.info(
+                        f"Deleting file '{filename}' "
+                        f"from collection '{collection_name}'"
+                    )
+                    vector_service.delete_documents_by_file(collection_name, filename)
+                    document_service.delete_uploaded_file(document_id)
+                    document_service.delete_document_by_id(document_id)
+                    return {
+                        "message": "Document deleted successfully.",
+
+                        "filename": filename
+                    }
+                except HTTPException:
+                    raise
+                except Exception:
+                    logger.exception("Failed to delete document.")
+                    raise HTTPException(status_code=500, detail="Failed to delete document.")
 
 @app.delete("/documents/{collection_name}")
 def delete_document(collection_name: str, user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):

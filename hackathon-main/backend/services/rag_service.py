@@ -32,7 +32,7 @@ class RAGService:
         documents = self.retrieval_service.retrieve_documents(query, collection_name)
         if not documents:
             raise ValueError("No documents found.")
-            logger.info(f"Step 3: Retrieved {len(documents)} documents")
+        logger.info(f"Step 3: Retrieved {len(documents)} documents")
 
         logger.info("Step 4: Building prompt")
         prompt = self.prompt_service.build_prompt(documents, query)
@@ -62,7 +62,7 @@ class RAGService:
 # Chroma DB
 
 # Retrieved Documents
-#         │
+#         │but 
 #         ▼
 # PromptService
 #         │

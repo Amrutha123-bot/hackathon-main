@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { askQuestion } from "../services/api";
 import ChatWindow from "../components/ChatWindow";
 
@@ -7,6 +7,10 @@ export default function Chat({ selectedCollection }) {
     const [question, setQuestion] = useState("");
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        setMessages([]);
+    }, [selectedCollection]);
+    
     const handleSend = async () => {
         if (!question.trim()) return;
 
@@ -28,6 +32,8 @@ export default function Chat({ selectedCollection }) {
         setLoading(true);
 
         try {
+            console.log("Selected collection:", selectedCollection);
+            console.log("Question:", currentQuestion);
             const response = await askQuestion(
                 currentQuestion,
                 selectedCollection

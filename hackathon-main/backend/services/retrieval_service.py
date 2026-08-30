@@ -16,12 +16,37 @@ class RetrievalService:
     def __init__(self):
         self.vector_service = VectorService()
 
-    def retrieve_documents(self, query: str, collection_name: str)-> List[Document]:#even empty list can be returned
+    # def retrieve_documents(self, query: str, collection_name: str)-> List[Document]:#even empty list can be returned
+    #     try:
+    #         logger.info(f"RETRIEVAL COLLECTION = {collection_name}")
+    #         retriever = self.vector_service.get_retriever(collection_name)
+    #         relevant_documents = retriever.invoke(query)#no direct retrieve method from langchain
+    #         logger.info(f"Retrieved {len(relevant_documents)} documents for the query: {query}")
+    #         return relevant_documents
+    #     except Exception as e:
+    #         logger.error(f"Error retrieving documents for query '{query}': {e}")
+    #         raise
+
+    def retrieve_documents(self, query: str, collection_name: str) -> List[Document]:
         try:
+            logger.info(f"RETRIEVAL COLLECTION = {collection_name}")
+
             retriever = self.vector_service.get_retriever(collection_name)
-            relevant_documents = retriever.invoke(query)#no direct retrieve method from langchain
-            logger.info(f"Retrieved {len(relevant_documents)} documents for the query: {query}")
+
+            relevant_documents = retriever.invoke(query)
+
+            logger.info(f"Retrieved {len(relevant_documents)} documents")
+
+            for i, doc in enumerate(relevant_documents):
+                logger.info(
+                    f"RESULT {i+1}: "
+                    f"source={doc.metadata.get('source')}, "
+                    f"file_path={doc.metadata.get('file_path')}, "
+                    f"collection={doc.metadata.get('collection_name')}"
+                )
+
             return relevant_documents
+
         except Exception as e:
-            logger.error(f"Error retrieving documents for query '{query}': {e}")
+            logger.error(f"Error retrieving documents: {e}")
             raise

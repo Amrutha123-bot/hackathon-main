@@ -33,33 +33,36 @@ class PromptService:
         
         return "\n\n".join(formatted_chunks)
     
-    def build_prompt(self, documents: List[Document], query: str)->str:
-                                                  #to encode modern text file - avoids decoding issues
+    def build_prompt(self, documents: List[Document], query: str) -> str:
         try:
-            system_prompt =SYSTEM_PROMPT
-            context=self.format_context(documents)
+            system_prompt = SYSTEM_PROMPT
+            context = self.format_context(documents)
+
+            logger.info("========== PROMPT CONTEXT ==========")
+            logger.info(context)
+            logger.info("====================================")
+
             prompt = f"""
-                SYSTEM INSTRUCTIONS
-                -------------------
+    SYSTEM INSTRUCTIONS
+    -------------------
 
-                {system_prompt}
+    {system_prompt}
 
-                DOCUMENT CONTEXT
-                -------------------
+    DOCUMENT CONTEXT
+    -------------------
 
-                {context}
+    {context}
 
-                USER QUESTION
-                -------------------
+    USER QUESTION
+    -------------------
 
-                {query}
+    {query}
 
-                What is the waiting period?
-
-                RESPONSE
-                -------------------
+    RESPONSE
+    -------------------
     """
             return prompt
+
         except Exception as e:
             logger.error(f"Error in generating the prompt: {e}")
             raise

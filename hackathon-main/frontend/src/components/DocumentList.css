@@ -1,66 +1,128 @@
-.document-list {
-    margin-top: 30px;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
+.document-section {
+    width: min(1100px, 92%);
+    margin: 28px auto;
 }
 
-.document-list h2 {
-    margin-bottom: 20px;
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.section-heading h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #172554;
+}
+
+.section-heading p {
+    margin: 6px 0 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.documents-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .document-card {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
 
-    border: 1px solid #ddd;
+    padding: 18px 20px;
 
-    border-radius: 10px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
 
-    padding: 15px;
-
-    margin-bottom: 15px;
-
-    transition: 0.2s;
+    transition: all 0.2s ease;
 }
 
 .document-card:hover {
-    border-color: #0077ff;
+    border-color: #93c5fd;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
 }
 
 .document-card.active {
-    border: 2px solid #0077ff;
-    background: #eef5ff;
+    border: 2px solid #2563eb;
+    background: #eff6ff;
 }
 
 .document-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
     flex: 1;
     cursor: pointer;
+    min-width: 0;
 }
 
-.document-info h3 {
+.file-icon {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #dbeafe;
+    border-radius: 10px;
+
+    font-size: 20px;
+}
+
+.file-details {
+    min-width: 0;
+}
+
+.file-details h3 {
     margin: 0;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    color: #0f172a;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.document-info p {
-    margin-top: 8px;
-    color: #666;
+.file-details p {
+    margin: 5px 0 0;
+
+    font-size: 13px;
+    color: #64748b;
 }
 
 .delete-btn {
-    padding: 8px 14px;
     border: none;
-    background: crimson;
-    color: white;
-    border-radius: 6px;
+
+    padding: 9px 14px;
+
+    border-radius: 8px;
+
+    background: #fee2e2;
+    color: #dc2626;
+
+    font-size: 13px;
+    font-weight: 600;
+
     cursor: pointer;
+
+    transition: all 0.2s ease;
 }
 
 .delete-btn:hover {
-    background: darkred;
+    background: #fecaca;
 }
 
-.empty {
+.document-section.empty {
     text-align: center;
+    padding: 30px 0;
 }

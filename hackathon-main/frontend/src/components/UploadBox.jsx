@@ -2,14 +2,14 @@ import { useState } from "react";
 import { uploadDocuments } from "../services/api";
 import "./UploadBox.css";
 
-export default function UploadBox({ refreshDocuments }) {
+export default function UploadBox({ refreshDocuments, setSelectedCollection }) {
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
 
     const handleFileChange = (e) => {
         setFiles(Array.from(e.target.files));
-        setMessage("");
+        setMessage(""); 
     };
 
     const handleUpload = async () => {
@@ -29,6 +29,7 @@ export default function UploadBox({ refreshDocuments }) {
 
             // Refresh document list
             await refreshDocuments();
+            setSelectedCollection(response.collection_name);
         } catch (error) {
             console.error(error);
             setMessage(error.message);

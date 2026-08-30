@@ -11,6 +11,7 @@ export default function Home({
         <>
             <UploadBox
                 refreshDocuments={refreshDocuments}
+                setSelectedCollection={setSelectedCollection}
             />
 
             <DocumentList

@@ -10,12 +10,10 @@ CHUNK_OVERLAP = 150
 SUPPORTED_FILE_TYPES = ['.pdf', '.docx', '.txt']
 UPLOAD_DIRECTORY = "uploaded_docs"
 VECTOR_STORE_PATH = './vector_store'
-# EMBEDDING_PROVIDER = "huggingface"
-# EMBEDDING_MODEL= "BAAI/bge-small-en-v1.5"#good semantic retrival quality, light enough for local development, popular for production RAG systems, faster than very large embedding models
 EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "gemini")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", 'groq')
-LLM_MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-oss-120b")
 
 TEMPERATURE = 0.2
 MAX_OUTPUT_TOKEN = 512
@@ -24,6 +22,31 @@ SEARCH_TYPE = 'similarity'
 TOP_K = 5 #best 5 chunks
 SUPPORTED_EXTENSIONS = {'.pdf', '.docx', '.txt'}
 SYSTEM_PROMPT = """
+========================================
+GROUNDING RULES
+========================================
+
+Answer the user's question ONLY using the information provided in the
+DOCUMENT CONTEXT.
+
+Do not use outside knowledge.
+
+Do not invent, assume, or hallucinate facts, filenames, page numbers,
+policy details, or sources.
+
+If the answer cannot be found in the DOCUMENT CONTEXT, clearly say that
+the information was not found in the provided documents.
+
+SOURCE RULES:
+- The DOCUMENT CONTEXT contains the only valid sources.
+- In the Sources section, mention ONLY files and page numbers that actually
+  appear in the DOCUMENT CONTEXT.
+- Never mention a filename that does not appear in the DOCUMENT CONTEXT.
+- Never invent a page number.
+- Do not cite documents that were not retrieved.
+- If multiple retrieved chunks come from the same file, list that file only
+  once with the relevant page numbers.
+
 ========================================
 RESPONSE FORMAT
 ========================================

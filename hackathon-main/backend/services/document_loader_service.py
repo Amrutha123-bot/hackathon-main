@@ -218,6 +218,7 @@ class DocumentLoaderService:
                                     "file_type": extension,
                                     "file_path": file_path,
                                     "loaded_at": datetime.now().isoformat(),
+                                    
                                 },
                             )
 
@@ -297,6 +298,139 @@ class DocumentLoaderService:
                         raise
 
         logger.info(f"Successfully loaded {len(documents)} documents.")
+
+        return DocumentLoadResult(
+            documents=documents,
+            failed_files=failed_files,
+            total_loaded=len(documents),
+        )
+
+    def load_file(
+    self,
+    file_path: str,
+    strict_mode: bool = False
+) -> DocumentLoadResult:
+
+        documents = []
+        failed_files = []
+
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(
+                f"File not found: {file_path}"
+            )
+
+        file = os.path.basename(file_path)
+        extension = os.path.splitext(file)[1].lower()
+
+        try:
+
+            # =====================================================
+            # PDF
+            # =====================================================
+            if extension == ".pdf":
+
+                reader = PdfReader(file_path)
+
+                for page_num, page in enumerate(reader.pages):
+
+                    text = page.extract_text() or ""
+
+                    if not text.strip():
+                        continue
+
+                    document = Document(
+                        page_content=text,
+                        metadata={
+                            "source": file,
+                            "page": page_num + 1,
+                            "file_type": extension,
+                            "file_path": file_path,
+                            "loaded_at": datetime.now().isoformat(),
+                        },
+                    )
+
+                    documents.append(document)
+
+            # =====================================================
+            # DOCX
+            # =====================================================
+            elif extension == ".docx":
+
+                doc = DocxDocument(file_path)
+
+                text = "\n".join(
+                    para.text
+                    for para in doc.paragraphs
+                )
+
+                if text.strip():
+
+                    document = Document(
+                        page_content=text,
+                        metadata={
+                            "source": file,
+                            "page": 1,
+                            "file_type": extension,
+                            "file_path": file_path,
+                            "loaded_at": datetime.now().isoformat(),
+                        },
+                    )
+
+                    documents.append(document)
+
+            # =====================================================
+            # TXT
+            # =====================================================
+            elif extension == ".txt":
+
+                with open(
+                    file_path,
+                    "r",
+                    encoding="utf-8"
+                ) as f:
+
+                    text = f.read()
+
+                if text.strip():
+
+                    document = Document(
+                        page_content=text,
+                        metadata={
+                            "source": file,
+                            "page": 1,
+                            "file_type": extension,
+                            "file_path": file_path,
+                            "loaded_at": datetime.now().isoformat(),
+                        },
+                    )
+
+                    documents.append(document)
+
+            # =====================================================
+            # Unsupported
+            # =====================================================
+            else:
+
+                logger.warning(
+                    f"Unsupported file type: {extension}"
+                )
+
+                failed_files.append(file_path)
+
+        except Exception as e:
+
+            logger.error(
+                f"Error loading file {file_path}: {e}"
+            )
+
+            failed_files.append(file_path)
+
+            if strict_mode:
+                raise
+
+        logger.info(
+            f"Loaded {len(documents)} documents from {file}"
+        )
 
         return DocumentLoadResult(
             documents=documents,

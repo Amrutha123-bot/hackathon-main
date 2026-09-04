@@ -332,7 +332,13 @@ def delete_file(document_id: str, user=Depends(get_current_user), supabase: Clie
                         f"Deleting file '{filename}' "
                         f"from collection '{collection_name}'"
                     )
-                    vector_service.delete_documents_by_file(collection_name, filename)
+                    try:
+                        vector_service.delete_documents_by_file(collection_name, filename)
+                    except FileNotFoundError:
+                        logger.warning(
+                            f"Vector store not found for collection {collection_name}. "
+                            "Skipping vector deletion."
+                        )
                     document_service.delete_uploaded_file(document_id)
                     document_service.delete_document_by_id(document_id)
                     return {

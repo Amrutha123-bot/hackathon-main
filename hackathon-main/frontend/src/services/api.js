@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = "https://hackathon-main-6.onrender.com";
 
 /**
  * Get the current user's access token

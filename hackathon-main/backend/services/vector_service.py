@@ -151,14 +151,27 @@ class VectorService:
     def delete_documents_by_file(self, collection_name: str, filename: str):
         try:
             vector_store = self.load_vector_store(collection_name)
-            vector_store._collection.delete(where={"source": filename})
-            logger.info(
-                f"Deleted chunks for file '{filename}"
-                f"from collection '{collection_name}"
+
+            vector_store._collection.delete(
+                where={"source": filename}
             )
+
+            logger.info(
+                f"Deleted chunks for file '{filename}' "
+                f"from collection '{collection_name}'"
+            )
+
             return True
+
+        except FileNotFoundError:
+            logger.warning(
+                f"Vector store not found for collection "
+                f"'{collection_name}'. Skipping vector deletion."
+            )
+            return False
+
         except Exception as e:
-            logger.error(f"failed to delete file chunks: {e}")
+            logger.error(f"Failed to delete file chunks: {e}")
             raise
     
 #vector service will build the retriever 

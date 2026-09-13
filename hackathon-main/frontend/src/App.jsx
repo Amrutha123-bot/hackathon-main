@@ -11,7 +11,7 @@ import { getDocuments } from "./services/api";
 function App() {
     const [session, setSession] = useState(null);
     const [documents, setDocuments] = useState([]);
-    const [selectedCollection, setSelectedCollection] = useState(null);
+    const [selectedDocumentIds, setSelectedDocumentIds] = useState([]);
     const [loadingDocuments, setLoadingDocuments] = useState(false);
 
     // Check whether user is already logged in
@@ -26,7 +26,6 @@ function App() {
 
         getSession();
 
-        // Listen for login/logout changes
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(
@@ -45,28 +44,24 @@ function App() {
             setLoadingDocuments(true);
 
             const data = await getDocuments();
-
             const docs = data.documents || [];
 
             setDocuments(docs);
 
-            if (
-                docs.length > 0 &&
-                (!selectedCollection ||
-                    !docs.some(
-                        (d) =>
-                            d.collection_name ===
-                            selectedCollection
-                    ))
-            ) {
-                setSelectedCollection(
-                    docs[0].collection_name
+            // Keep only selections that still exist
+            setSelectedDocumentIds((previous) => {
+                const validIds = previous.filter((id) =>
+                    docs.some((doc) => doc.id === id)
                 );
-            }
 
-            if (docs.length === 0) {
-                setSelectedCollection(null);
-            }
+                // If there is exactly one document,
+                // automatically select it.
+                if (docs.length === 1) {
+                    return [docs[0].id];
+                }
+
+                return validIds;
+            });
 
         } catch (error) {
             console.error(error);
@@ -75,13 +70,13 @@ function App() {
         }
     };
 
-    // Fetch documents only after login
+    // Fetch documents after login
     useEffect(() => {
         if (session) {
             fetchDocuments();
         } else {
             setDocuments([]);
-            setSelectedCollection(null);
+            setSelectedDocumentIds([]);
         }
     }, [session]);
 
@@ -98,7 +93,6 @@ function App() {
         return <Login onLogin={setSession} />;
     }
 
-    // Logged in
     return (
         <div className="app">
 
@@ -110,12 +104,14 @@ function App() {
                     <p>
                         {documents.length === 0
                             ? "Your private insurance knowledge assistant"
-                            : `📚 ${documents.length} document${documents.length !== 1 ? "s" : ""
-                            } uploaded`}
+                            : `📚 ${documents.length} document${documents.length !== 1 ? "s" : ""} uploaded`}
                     </p>
                 </div>
 
-                <button className="logout-btn" onClick={handleLogout}>
+                <button
+                    className="logout-btn"
+                    onClick={handleLogout}
+                >
                     Logout
                 </button>
 
@@ -125,16 +121,14 @@ function App() {
 
                 <Home
                     documents={documents}
-                    selectedCollection={selectedCollection}
-                    setSelectedCollection={
-                        setSelectedCollection
-                    }
+                    selectedDocumentIds={selectedDocumentIds}
+                    setSelectedDocumentIds={setSelectedDocumentIds}
                     refreshDocuments={fetchDocuments}
                     loadingDocuments={loadingDocuments}
                 />
 
                 <Chat
-                    selectedCollection={selectedCollection}
+                    selectedDocumentIds={selectedDocumentIds}
                 />
 
             </main>

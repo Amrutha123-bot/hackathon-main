@@ -21,7 +21,8 @@ class DocumentService:
     user_id: str,
     filename: str,
     filepath: str,
-    collection_name: str
+    collection_name: str,
+    document_id: str | None = None
     ):
         document = {
             "user_id": user_id,
@@ -29,6 +30,8 @@ class DocumentService:
             "storage_path": filepath,
             "collection_name": collection_name,
         }
+        if document_id:
+            document["id"] = document_id
 
         response = (
             self.supabase

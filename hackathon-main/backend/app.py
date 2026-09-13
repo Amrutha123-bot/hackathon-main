@@ -1,152 +1,13 @@
-# #pip install fastapi uvicorn python-multipart\
-# #the web server - react runs browser and the backend runs on a server
-# #we need a bridge to connect the browser and the server - API
-# import os
-# from fastapi import (FastAPI, UploadFile, File)
-# from services.ingestion_service import IngestionService
-# from services.rag_service import RAGService
-# from config.settings import (VECTOR_STORE_PATH, SUPPORTED_EXTENSIONS, UPLOAD_DIRECTORY)
-# import logging
-# from fastapi.middleware.cors import CORSMiddleware
-# from schema.request import QuestionRequest
-# from schema.response import (UploadResponse, QuestionResponse, HealthResponse)
-# from typing import List
-# import shutil#to copy the uploaded contents
-
-# logger = logging.getLogger(__name__)
-
-# app=FastAPI()#obj of web application
-# ingestion_service = IngestionService()
-# rag_service = RAGService()
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=[
-#         "http://localhost:5173",
-#     ],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-# @app.get("/", response_model=HealthResponse)
-# def home():
-#     logger.info("Health check endpoint called.")
-#     return { "message": "Insurance RAG API is running."}
-# #how does FastAPI know which python function to execute when there are some 100s of function - we have decorators(request, function to be executed)
-
-# @app.post("/upload", response_model=UploadResponse)#list of docs coming from the request of post method
-# def upload_documents(files: List[UploadFile]= File(...)):#simply save the uploaded files
-#     logger.info(f"Received {len(files)} files for upload.")
-#     os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
-#     uploaded_files = []
-#     failed_files = []
-#     for file in files:
-#         try:
-#             filename=file.filename
-#             extension = os.path.splitext(filename)[1].lower()
-#             if extension not in SUPPORTED_EXTENSIONS:
-#                 logger.warning(f"File type not supported: {filename}")
-#                 failed_files.append(filename)
-#                 continue
-#             destination = os.path.join(UPLOAD_DIRECTORY, filename)
-#             with open(destination, "wb") as buffer:
-#                 shutil.copyfileobj(file.file, buffer)#save all the files before uploading them in the directory
-#             uploaded_files.append(filename)
-#         except Exception as e:
-#             logger.error(f"Failed to save {filename}: {e}")
-#             failed_files.append(filename)
-#             continue
-#     if not uploaded_files:
-#         return {
-#             "message": "No valid files were uploaded.",
-#             "uploaded_files": [],
-#             "failed_files": failed_files
-#         }
-#     if uploaded_files:
-#         try:
-#             ingestion_service.ingest_documents(UPLOAD_DIRECTORY)
-#         except Exception as e:
-#             logger.error(f"Error during document ingestion: {e}")
-#             raise
-#     logger.info(
-#         f"Successfully uploaded {len(uploaded_files)} file(s). "
-#         f"Failed: {len(failed_files)}."
-#     )
-#     return {
-#         "message": "Upload completed successfully.",
-#         "uploaded_files": uploaded_files,
-#         "failed_files": failed_files
-#     }
-
-
-# # request = QuestionRequest(...)    #question will be received from the http request by FASTAPI
-# @app.post("/ask", response_model=QuestionResponse)
-# #receive req-extract questio - epty? - yes (error) - no - RAGService.answer_question() - return answer
-# def ask_question(request: QuestionRequest):#as the input is in the form of jso n
-
-#     ques = request.question.strip()
-#     if not ques:
-#         logger.error(f"Enter a question.")
-#         return {
-#                 "message": "Please enter a valid question."
-#             }
-#     logger.info(f"Received question: {ques}")
-#     try:
-#         ans=rag_service.answer_question(ques)
-#         logger.info("Question answered successfully.")
-#         logger.info(ans)
-#     except Exception as e:
-#         logger.error(f"Error in generating response: {e}")
-#         raise
-#     return {
-#                 "question": ques,
-#                 "answer": ans
-#         }
-
-
-# # React
-
-# # ↓
-
-# # POST /upload
-
-# # ↓
-
-# # FastAPI
-
-# # ↓
-
-# # UploadFile object
-
-# # ↓
-# # validate and then save and continue till all the other files are saved then ingestion
-# # Save into uploaded_docs/
-
-# # ↓
-
-# # IngestionService
-
-# # ↓
-
-# # PDFService
-
-# # ↓
-
-# # ChunkService
-
-# # ↓
-
-# # VectorService
-
-
 import os
 import shutil
+import tempfile
 import logging
 from typing import List
 import uuid
-
+from pathlib import Path
 from supabase import Client
 from auth.auth_dependency import (get_current_user, get_user_supabase_client)
-from services.vector_service import VectorService
+
 from fastapi import FastAPI, UploadFile
 from fastapi import File
 from fastapi.middleware.cors import CORSMiddleware
@@ -156,29 +17,28 @@ from fastapi import Depends
 from auth.auth_dependency import get_current_user
 from services.ingestion_service import IngestionService
 from services.rag_service import RAGService
+from services.storage_service import StorageService
 
 from services.document_service import DocumentService
 # import langchain
 from config.settings import (
-    VECTOR_STORE_PATH,
-    SUPPORTED_EXTENSIONS,
-    UPLOAD_DIRECTORY,
+    SUPPORTED_EXTENSIONS
 )
-
+from services.supabase_service import SupabaseService
 from schema.request import QuestionRequest
 from schema.response import (
     UploadResponse,
     QuestionResponse,
     HealthResponse,
 )
+from fastapi.middleware.cors import CORSMiddleware
 
 # -------------------- Logging --------------------
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-vector_service = VectorService()
+
 ingestion_service = IngestionService()
-rag_service = RAGService()
 
 logger.info("All services initialized.")
 
@@ -186,7 +46,15 @@ logger.info("All services initialized.")
 
 app = FastAPI()
 logger.info("STEP 2: FastAPI created")
+# -------------------- CORS --------------------
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # -------------------- Startup --------------------
 
 @app.on_event("startup")
@@ -203,19 +71,7 @@ async def startup_event():
 # rag_service = RAGService()
 # logger.info("STEP 4: RAGService created")
 
-# -------------------- CORS --------------------
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://policy-ai.vercel.app",
-        "https://policy-ai-taupe.vercel.app",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 @app.get("/me")
 def get_me(user=Depends(get_current_user)):
     return {
@@ -232,51 +88,136 @@ def home():
     }
 
 # -------------------- Upload --------------------
-
 @app.post("/upload", response_model=UploadResponse)
-def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):
+def upload_documents(
+    files: List[UploadFile] = File(...),
+    user=Depends(get_current_user),
+    supabase: Client = Depends(get_user_supabase_client)
+):
     document_service = DocumentService(supabase)
-    logger.info(f"Received {len(files)} files for upload.")
-    logger.info(f"Authenticated user: {user.id}")
-    os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+    supabase_service = SupabaseService()
+
+    storage_service = StorageService(
+        supabase_service.get_storage_client()
+    )
+
+    logger.info(
+        "Received %d files for upload.",
+        len(files)
+    )
+
+    logger.info(
+        "Authenticated user: %s",
+        user.id
+    )
 
     uploaded_files = []
     failed_files = []
 
+    collection_name = f"policy_{uuid.uuid4().hex}"
+
     for file in files:
+
+        filename = Path(file.filename).name
+
         try:
-            filename = file.filename
-            extension = os.path.splitext(filename)[1].lower()
+            extension = Path(filename).suffix.lower()
 
             if extension not in SUPPORTED_EXTENSIONS:
-                logger.warning(f"Unsupported file: {filename}")
+
+                logger.warning(
+                    "Unsupported file: %s",
+                    filename
+                )
+
                 failed_files.append(filename)
                 continue
 
-            existing_documents = document_service.get_document_by_filename(
-                user_id=str(user.id),
-                filename=filename
+            existing_documents = (
+                document_service.get_document_by_filename(
+                    user_id=str(user.id),
+                    filename=filename
+                )
             )
 
             if existing_documents:
+
                 logger.warning(
-                    f"Duplicate file rejected: {filename}"
+                    "Duplicate file rejected: %s",
+                    filename
                 )
+
                 failed_files.append(filename)
                 continue
 
-            destination = os.path.join(UPLOAD_DIRECTORY, filename)
+            # -----------------------------------------
+            # Generate document ID before storage upload
+            # -----------------------------------------
 
-            with open(destination, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            document_id = str(uuid.uuid4())
 
-            uploaded_files.append(filename)
+            storage_path = (
+                f"{user.id}/{document_id}/{filename}"
+            )
 
-        except Exception as e:
-            logger.exception(f"Failed to save {filename}")
+            # -----------------------------------------
+            # Save temporarily
+            # -----------------------------------------
+
+            with tempfile.NamedTemporaryFile(
+                delete=False,
+                suffix=extension
+            ) as temporary_file:
+
+                temporary_path = temporary_file.name
+
+                shutil.copyfileobj(
+                    file.file,
+                    temporary_file
+                )
+
+           
+
+            # -----------------------------------------
+            # Upload to Supabase Storage
+            # -----------------------------------------
+
+            content_type = file.content_type
+
+            storage_service.upload_file(
+                file_path=temporary_path,
+                storage_path=storage_path,
+                content_type=content_type
+            )
+
+            # -----------------------------------------
+            # Remove temporary upload
+            # -----------------------------------------
+
+            os.remove(temporary_path)
+
+            uploaded_files.append({
+                "filename": filename,
+                "storage_path": storage_path,
+                "document_id": document_id
+            })
+
+            logger.info(
+                "Uploaded '%s' to Storage.",
+                filename
+            )
+
+        except Exception:
+
+            logger.exception(
+                "Failed to upload file: %s",
+                filename
+            )
+
             failed_files.append(filename)
 
     if not uploaded_files:
+
         return {
             "message": "No valid files were uploaded.",
             "uploaded_files": [],
@@ -285,24 +226,37 @@ def upload_documents(files: List[UploadFile] = File(...), user=Depends(get_curre
         }
 
     try:
-        collection_name = f"policy_{uuid.uuid4().hex}"
-        # ingestion_service = IngestionService()
-        ingestion_service.ingest_documents(directory_path=UPLOAD_DIRECTORY, collection_name=collection_name, uploaded_files=uploaded_files, user_id=str(user.id), supabase=supabase)
-        
-        logger.info(f"Vector store exists: {os.path.exists(VECTOR_STORE_PATH)}")
-        logger.info(f"Vector store path: {VECTOR_STORE_PATH}")
+
+        result = ingestion_service.ingest_documents(
+            collection_name=collection_name,
+            uploaded_files=uploaded_files,
+            user_id=str(user.id),
+            supabase=supabase
+        )
 
     except Exception:
-        logger.exception("Document ingestion failed")
-        raise
+
+        logger.exception(
+            "Document ingestion failed."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Document ingestion failed."
+        )
 
     return {
         "message": "Upload completed successfully.",
-        "uploaded_files": uploaded_files,
-        "failed_files": failed_files,
+        "uploaded_files": [
+            file["filename"]
+            for file in uploaded_files
+        ],
+        "failed_files": (
+            failed_files +
+            result["failed_files"]
+        ),
         "collection_name": collection_name
     }
-
 # -------------------- Documents --------------------
 
 @app.get("/documents")
@@ -320,43 +274,81 @@ def get_documents(user=Depends(get_current_user), supabase: Client = Depends(get
         raise
 
 @app.delete("/documents/file/{document_id}")
-def delete_file(document_id: str, user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):
-                try:
-                    document_service = DocumentService(supabase)
-                    document=document_service.get_document_by_id(document_id)
-                    if not document:
-                        raise HTTPException(status_code=404, detail="Document not found.")
-                    filename=document["filename"]
-                    collection_name=document["collection_name"]
-                    logger.info(
-                        f"Deleting file '{filename}' "
-                        f"from collection '{collection_name}'"
-                    )
-                    try:
-                        vector_service.delete_documents_by_file(collection_name, filename)
-                    except FileNotFoundError:
-                        logger.warning(
-                            f"Vector store not found for collection {collection_name}. "
-                            "Skipping vector deletion."
-                        )
-                    document_service.delete_uploaded_file(document_id)
-                    document_service.delete_document_by_id(document_id)
-                    return {
-                        "message": "Document deleted successfully.",
-
-                        "filename": filename
-                    }
-                except HTTPException:
-                    raise
-                except Exception:
-                    logger.exception("Failed to delete document.")
-                    raise HTTPException(status_code=500, detail="Failed to delete document.")
-
-@app.delete("/documents/{collection_name}")
-def delete_document(collection_name: str, user=Depends(get_current_user), supabase: Client = Depends(get_user_supabase_client)):
+def delete_file(
+    document_id: str,
+    user=Depends(get_current_user),
+    supabase: Client = Depends(get_user_supabase_client)
+):
     try:
         document_service = DocumentService(supabase)
-        documents = document_service.get_documents_by_collection(collection_name)
+
+        supabase_service = SupabaseService()
+
+        storage_service = StorageService(
+            supabase_service.get_storage_client()
+        )
+
+        document = document_service.get_document_by_id(
+            document_id
+        )
+
+        if not document:
+            raise HTTPException(
+                status_code=404,
+                detail="Document not found."
+            )
+
+        filename = document["filename"]
+        collection_name = document["collection_name"]
+
+        logger.info(
+            f"Deleting file '{filename}' "
+            f"from collection '{collection_name}'"
+        )
+
+        # Delete the physical uploaded file
+        storage_service.delete_file(
+            document["storage_path"]
+        )
+
+        # Delete document metadata.
+        # Its document_chunks are automatically deleted
+        # through ON DELETE CASCADE.
+        document_service.delete_document_by_id(
+            document_id
+        )
+
+        return {
+            "message": "Document deleted successfully.",
+            "filename": filename
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception(
+            "Failed to delete document."
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete document."
+        )
+
+    
+@app.delete("/documents/{collection_name}")
+def delete_document(
+    collection_name: str,
+    user=Depends(get_current_user),
+    supabase: Client = Depends(get_user_supabase_client)
+):
+    try:
+        document_service = DocumentService(supabase)
+
+        documents = document_service.get_documents_by_collection(
+            collection_name
+        )
 
         if not documents:
             raise HTTPException(
@@ -364,13 +356,29 @@ def delete_document(collection_name: str, user=Depends(get_current_user), supaba
                 detail="Collection not found."
             )
 
-        # vector_service = VectorService()
+        logger.info(
+            f"Deleting knowledge base '{collection_name}' "
+            f"containing {len(documents)} document(s)."
+        )
 
-        vector_service.delete_collection(collection_name)#chroma collection is deleted
+        # Delete physical uploaded files
+        for document in documents:
+            filepath = document["storage_path"]
 
-        document_service.delete_uploaded_files(collection_name)
+            if os.path.exists(filepath):
+                os.remove(filepath)
 
-        document_service.delete_document(collection_name)
+                logger.info(
+                    f"Deleted file: {filepath}"
+                )
+
+        # Delete document metadata.
+        # document_chunks are automatically deleted
+        # because of ON DELETE CASCADE.
+        for document in documents:
+            document_service.delete_document_by_id(
+                document["id"]
+            )
 
         return {
             "message": "Knowledge base deleted successfully."
@@ -380,45 +388,84 @@ def delete_document(collection_name: str, user=Depends(get_current_user), supaba
         raise
 
     except Exception:
-        logger.exception("Failed to delete knowledge base.")
+        logger.exception(
+            "Failed to delete knowledge base."
+        )
+
         raise HTTPException(
             status_code=500,
             detail="Failed to delete knowledge base."
         )
-# -------------------- Ask --------------------
-
+    
 @app.post("/ask", response_model=QuestionResponse)
-def ask_question(request: QuestionRequest, user=Depends(get_current_user), supabase: Client=Depends(get_user_supabase_client)):
+def ask_question(
+    request: QuestionRequest,
+    user=Depends(get_current_user),
+    supabase: Client = Depends(get_user_supabase_client)
+):
 
     question = request.question.strip()
-    collection_name = request.collection_name
+    document_ids = request.document_ids
 
     if not question:
-        raise HTTPException(status_code=400, detail="Please enter a valid question.")
+        raise HTTPException(
+            status_code=400,
+            detail="Please enter a valid question."
+        )
+
+    if not document_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one document must be selected."
+        )
 
     logger.info(f"Received question: {question}")
 
     try:
-        # rag_service = RAGService()
-        document_service=DocumentService(supabase)
-        documents = document_service.get_documents_by_collection(collection_name)#authorization check
+        document_service = DocumentService(supabase)
 
-        if not documents:
-            raise HTTPException(
-                status_code=404,
-                detail="Collection not found."
+        # Verify that every selected document belongs
+        # to the authenticated user.
+        verified_documents = []
+
+        for document_id in document_ids:
+
+            document = document_service.get_document_by_id(
+                document_id
             )
-        answer = rag_service.answer_question(question, collection_name)
+
+            if not document:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Document not found: {document_id}"
+                )
+
+            verified_documents.append(document)
+
+        logger.info(
+            f"Verified {len(verified_documents)} selected documents."
+        )
+
+        rag_service = RAGService(supabase)
+
+        result = rag_service.answer_question(
+            query=question,
+            document_ids=document_ids
+        )
+
         return {
-                "question": question,
-                "answer": answer,
-            }
+            "question": question,
+            "answer": result["answer"],
+            "citations": result["citations"]
+        }
+
     except HTTPException:
         raise
 
     except Exception:
         logger.exception("Error generating answer")
-        raise HTTPException(status_code=500, detail="Failed to generate answer.")
 
-    
-
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to generate answer."
+        )

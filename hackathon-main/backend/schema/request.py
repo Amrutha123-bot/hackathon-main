@@ -1,5 +1,9 @@
 from pydantic import BaseModel
+from typing import List
+
 
 class QuestionRequest(BaseModel):
+
     question: str
-    collection_name: str
+
+    document_ids: List[str]

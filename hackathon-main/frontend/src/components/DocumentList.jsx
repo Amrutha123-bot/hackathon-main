@@ -3,8 +3,8 @@ import "./DocumentList.css";
 
 export default function DocumentList({
     documents,
-    selectedCollection,
-    setSelectedCollection,
+    selectedDocumentIds,
+    setSelectedDocumentIds,
     refreshDocuments,
 }) {
     const handleDelete = async (documentId) => {
@@ -16,11 +16,27 @@ export default function DocumentList({
 
         try {
             await deleteDocument(documentId);
+
+            // Remove deleted document from selection
+            setSelectedDocumentIds((previous) =>
+                previous.filter((id) => id !== documentId)
+            );
+
             await refreshDocuments();
         } catch (error) {
             console.error(error);
             alert(error.message);
         }
+    };
+
+    const handleSelect = (documentId) => {
+        setSelectedDocumentIds((previous) => {
+            if (previous.includes(documentId)) {
+                return previous.filter((id) => id !== documentId);
+            }
+
+            return [...previous, documentId];
+        });
     };
 
     if (documents.length === 0) {
@@ -41,54 +57,78 @@ export default function DocumentList({
             <div className="section-heading">
                 <div>
                     <h2>Your Documents</h2>
+
                     <p>
-                        {documents.length} document
-                        {documents.length !== 1 ? "s" : ""} in your
-                        knowledge base
+                        Select one or more documents to use for
+                        questions.
                     </p>
+                </div>
+
+                <div>
+                    <strong>
+                        {selectedDocumentIds.length}
+                    </strong>{" "}
+                    selected
                 </div>
             </div>
 
             <div className="documents-grid">
-                {documents.map((doc) => (
-                    <div
-                        key={doc.id}
-                        className={
-                            selectedCollection === doc.collection_name
-                                ? "document-card active"
-                                : "document-card"
-                        }
-                    >
+                {documents.map((doc) => {
+                    const isSelected =
+                        selectedDocumentIds.includes(doc.id);
+
+                    return (
                         <div
-                            className="document-info"
-                            onClick={() =>
-                                setSelectedCollection(
-                                    doc.collection_name
-                                )
+                            key={doc.id}
+                            className={
+                                isSelected
+                                    ? "document-card active"
+                                    : "document-card"
                             }
                         >
-                            <div className="file-icon">📄</div>
+                            <div
+                                className="document-info"
+                                onClick={() =>
+                                    handleSelect(doc.id)
+                                }
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() =>
+                                        handleSelect(doc.id)
+                                    }
+                                    onClick={(event) =>
+                                        event.stopPropagation()
+                                    }
+                                />
 
-                            <div className="file-details">
-                                <h3>{doc.filename}</h3>
+                                <div className="file-icon">
+                                    📄
+                                </div>
 
-                                <p>
-                                    Click to use this document for
-                                    questions
-                                </p>
+                                <div className="file-details">
+                                    <h3>{doc.filename}</h3>
+
+                                    <p>
+                                        {isSelected
+                                            ? "Selected for questions"
+                                            : "Click to select"}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
 
-                        <button
-                            className="delete-btn"
-                            onClick={() =>
-                                handleDelete(doc.id)
-                            }
-                        >
-                            Delete
-                        </button>
-                    </div>
-                ))}
+                            <button
+                                className="delete-btn"
+                                onClick={() =>
+                                    handleDelete(doc.id)
+                                }
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
         </section>
     );

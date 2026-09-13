@@ -3,21 +3,21 @@ import DocumentList from "../components/DocumentList";
 
 export default function Home({
     documents,
-    selectedCollection,
-    setSelectedCollection,
+    selectedDocumentIds,
+    setSelectedDocumentIds,
     refreshDocuments,
 }) {
     return (
         <>
             <UploadBox
                 refreshDocuments={refreshDocuments}
-                setSelectedCollection={setSelectedCollection}
+                setSelectedDocumentIds={setSelectedDocumentIds}
             />
 
             <DocumentList
                 documents={documents}
-                selectedCollection={selectedCollection}
-                setSelectedCollection={setSelectedCollection}
+                selectedDocumentIds={selectedDocumentIds}
+                setSelectedDocumentIds={setSelectedDocumentIds}
                 refreshDocuments={refreshDocuments}
             />
         </>

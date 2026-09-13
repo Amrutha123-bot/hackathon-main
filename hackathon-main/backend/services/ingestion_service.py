@@ -2,134 +2,235 @@
 #instead of writing this load, split and vector creation multiple times just create a function and use this
 #i/o - the policy pdf doc, o/p - the relevant chunk docs
 #main purpose is to build the vector store database and not to return the content in it or u can return a summary saying that these many docs, chunks are successfully inserted
-import logging 
+import logging
 import os
-from supabase import Client
+import tempfile
+
 from services.document_loader_service import DocumentLoaderService
 from services.chunk_service import ChunkService
 from services.vector_service import VectorService
 from services.document_service import DocumentService
+from services.storage_service import StorageService
+from services.supabase_service import SupabaseService
 
 logger = logging.getLogger(__name__)
+
 
 class IngestionService:
 
     def __init__(self):
-        self.pdf_service = DocumentLoaderService()
+        self.document_loader = DocumentLoaderService()
         self.chunk_service = ChunkService()
-        self.vector_service = VectorService()
-        # self.document_service = DocumentService() can't be created here because the supabase client belongs to the curr user/request
-    
+
     def ingest_documents(
-    self,
-    directory_path: str,
-    collection_name: str,
-    uploaded_files: list[str],
-    user_id: str,
-    supabase: Client
-):
+        self,
+        collection_name: str,
+        uploaded_files: list[dict],
+        user_id: str,
+        supabase
+    ):
         document_service = DocumentService(supabase)
+        vector_service = VectorService(supabase)
+        supabase_service = SupabaseService()
+
+        storage_service = StorageService(
+            supabase_service.get_storage_client()
+        )
+
+        created_documents = []
 
         try:
+            # -----------------------------------------
+            # 1. Create document metadata
+            # -----------------------------------------
+
+            for uploaded_file in uploaded_files:
+
+                filename = uploaded_file["filename"]
+                storage_path = uploaded_file["storage_path"]
+
+                existing_documents = (
+                    document_service.get_document_by_filename(
+                        user_id=user_id,
+                        filename=filename
+                    )
+                )
+
+                if existing_documents:
+                    raise ValueError(
+                        f"Document '{filename}' already exists."
+                    )
+
+                document = document_service.add_document(
+                    user_id=user_id,
+                    filename=filename,
+                    filepath=storage_path,
+                    collection_name=collection_name,
+                    document_id=uploaded_file["document_id"]
+                )
+
+                created_documents.append(document)
+
             logger.info(
-                f"Starting document ingestion for files: {uploaded_files}"
+                "Created metadata for %d documents.",
+                len(created_documents)
             )
 
-            # -------------------------------------------------
-            # 1. Load ONLY the files uploaded in this request
-            # -------------------------------------------------
+            # -----------------------------------------
+            # 2. Download files temporarily
+            # -----------------------------------------
+
             all_documents = []
             failed_files = []
 
-            for filename in uploaded_files:
+            with tempfile.TemporaryDirectory() as temp_directory:
 
-                filepath = os.path.join(
-                    directory_path,
-                    filename
+                for uploaded_file, document in zip(
+                    uploaded_files,
+                    created_documents
+                ):
+
+                    filename = uploaded_file["filename"]
+                    storage_path = uploaded_file["storage_path"]
+
+                    try:
+                        file_bytes = storage_service.download_file(
+                            storage_path
+                        )
+                        logger.info(
+                            "Bytes received for '%s': %d",
+                            filename,
+                            len(file_bytes)
+                        )
+
+                        temporary_path = os.path.join(
+                            temp_directory,
+                            filename
+                        )
+
+                        with open(
+                            temporary_path,
+                            "wb"
+                        ) as temporary_file:
+                            temporary_file.write(file_bytes)
+                        logger.info(
+                                "Temporary file size for '%s': %d bytes",
+                                filename,
+                                os.path.getsize(temporary_path)
+                        )
+
+                        load_result = (
+                            self.document_loader.load_file(
+                                temporary_path
+                            )
+                        )
+
+                        # Make sure the original filename is preserved.
+                        for loaded_document in load_result.documents:
+                            loaded_document.metadata["source"] = filename
+
+                        all_documents.extend(
+                            load_result.documents
+                        )
+
+                        failed_files.extend(
+                            load_result.failed_files
+                        )
+
+                    except Exception:
+                        logger.exception(
+                            "Failed to process file: %s",
+                            filename
+                        )
+                        failed_files.append(filename)
+
+                # -----------------------------------------
+                # 3. Validate loaded content
+                # -----------------------------------------
+
+                if not all_documents:
+                    raise ValueError(
+                        "No readable content found in uploaded files."
+                    )
+
+                # -----------------------------------------
+                # 4. Create chunks
+                # -----------------------------------------
+
+                chunks = self.chunk_service.split_documents(
+                    all_documents
                 )
 
-                logger.info(
-                    f"Loading uploaded file only: {filepath}"
-                )
+                if not chunks:
+                    raise ValueError(
+                        "No chunks were created from the documents."
+                    )
 
-                load_result = self.pdf_service.load_file(filepath)
+                # -----------------------------------------
+                # 5. Map filenames → document IDs
+                # -----------------------------------------
 
-                all_documents.extend(
-                    load_result.documents
-                )
+                document_ids_by_filename = {
+                    document["filename"]: document["id"]
+                    for document in created_documents
+                }
 
-                failed_files.extend(
-                    load_result.failed_files
-                )
+                # -----------------------------------------
+                # 6. Generate embeddings + save chunks
+                # -----------------------------------------
 
-            if not all_documents:
-                raise ValueError(
-                    "No valid documents were loaded."
-                )
-
-            if failed_files:
-                logger.warning(
-                    f"Failed to load {len(failed_files)} file(s)."
-                )
-
-            # -------------------------------------------------
-            # 2. Chunk ONLY those uploaded documents
-            # -------------------------------------------------
-            chunks = self.chunk_service.split_documents(
-                all_documents
-            )
-
-            # -------------------------------------------------
-            # 3. Add ONLY those chunks to user's collection
-            # -------------------------------------------------
-            try:
-
-                vector_store = self.vector_service.add_documents(
-                    chunks,
-                    collection_name
-                )
-
-            except FileNotFoundError:
-
-                vector_store = self.vector_service.create_vector_store(
-                    chunks,
-                    collection_name
+                saved_chunks = vector_service.add_chunks(
+                    chunks=chunks,
+                    document_ids_by_filename=document_ids_by_filename
                 )
 
             logger.info(
-                f"Processed {len(all_documents)} documents "
-                f"into {len(chunks)} chunks."
+                "Successfully ingested %d documents and %d chunks.",
+                len(created_documents),
+                len(saved_chunks)
             )
 
-            # -------------------------------------------------
-            # 4. Store document metadata in Supabase
-            # -------------------------------------------------
-            for filename in uploaded_files:
+            return {
+                "documents": created_documents,
+                "chunks": saved_chunks,
+                "failed_files": failed_files
+            }
 
-                existing_documents=document_service.get_document_by_filename(user_id=user_id, filename=filename)
-                if existing_documents:
-                    raise ValueError(f"File '{filename}' has already been uploaded." )
+        except Exception:
 
-                filepath = os.path.join(
-                    directory_path,
-                    filename
-                )
-
-                document_service.add_document(
-                    user_id=user_id,
-                    filename=filename,
-                    filepath=filepath,
-                    collection_name=collection_name
-                )
-
-            return vector_store
-
-        except Exception as e:
-
-            logger.error(
-                f"Error during document ingestion: {e}"
+            logger.exception(
+                "Document ingestion failed. Rolling back metadata."
             )
+
+                        # -----------------------------------------
+            # Roll back Storage uploads
+            # -----------------------------------------
+
+            for uploaded_file in uploaded_files:
+
+                try:
+                    storage_service.delete_file(
+                        uploaded_file["storage_path"]
+                    )
+
+                except Exception:
+                    logger.exception(
+                        "Failed to rollback Storage file: %s",
+                        uploaded_file["storage_path"]
+                    )
+
+            # Roll back database metadata
+            for document in created_documents:
+
+                try:
+                    document_service.delete_document_by_id(
+                        document["id"]
+                    )
+
+                except Exception:
+
+                    logger.exception(
+                        "Failed to rollback document %s",
+                        document["id"])
 
             raise
-#request - jwt/user - user.id / user supabase client -ingestion service - document service(manage the metadata) - store the details for each user in the supabase - RLS (makes sures that the files and the collections related to one user is not viewed or accessed by another user)
-    

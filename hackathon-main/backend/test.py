@@ -1,31 +1,40 @@
+# # from chromadb import PersistentClient
+
+# # client = PersistentClient(path="./vector_store")
+
+# # collections = client.list_collections()
+
+# # for collection in collections:
+# #     print("COLLECTION:", collection.name)
+# #     print("COUNT:", collection.count())
 # from chromadb import PersistentClient
 
 # client = PersistentClient(path="./vector_store")
 
-# collections = client.list_collections()
+# collection = client.get_collection(
+#     "policy_b083e3302abb4d05aaa010d737fc7750"
+# )
 
-# for collection in collections:
-#     print("COLLECTION:", collection.name)
-#     print("COUNT:", collection.count())
-from chromadb import PersistentClient
+# data = collection.get(
+#     include=["documents", "metadatas"]
+# )
 
-client = PersistentClient(path="./vector_store")
+# print("TOTAL:", len(data["documents"]))
 
-collection = client.get_collection(
-    "policy_b083e3302abb4d05aaa010d737fc7750"
-)
+# for i, (doc, metadata) in enumerate(
+#     zip(data["documents"], data["metadatas"])
+# ):
 
-data = collection.get(
-    include=["documents", "metadatas"]
-)
+#     print("\n==============================")
+#     print("CHUNK:", i)
+#     print("METADATA:", metadata)
+#     print("TEXT:", doc[:200])
 
-print("TOTAL:", len(data["documents"]))
+from services.embedding_service import EmbeddingService
 
-for i, (doc, metadata) in enumerate(
-    zip(data["documents"], data["metadatas"])
-):
+embedding_service = EmbeddingService()
+model = embedding_service.get_embedding_model()
 
-    print("\n==============================")
-    print("CHUNK:", i)
-    print("METADATA:", metadata)
-    print("TEXT:", doc[:200])
+vector = model.embed_query("test")
+
+print("Embedding dimension:", len(vector))

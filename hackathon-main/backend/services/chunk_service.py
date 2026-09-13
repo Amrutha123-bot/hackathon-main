@@ -10,35 +10,46 @@
 #decide the type of splitting - 1000 chars or each sentence or recursiveTextSplitter 
 
 #recursiveTextSplitter - smart way - priority- nextline, . , , we use langchain to do that
-
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from config.settings import (CHUNK_SIZE, CHUNK_OVERLAP)#instead of creating a splitter every time use the splitter in the
-from typing import List
-from langchain_core.documents import Document
 import logging
 
-logger  = logging.getLogger(__name__)
-"""
-    Split LangChain Document objects into smaller semantic chunks
-    while preserving metadata.
-"""
-class ChunkService:
-    #each and every time the obj of this class is created automatically this splitting values will be loaded like we are creating a splitter
-    def __init__(self):#the splitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from config.settings import CHUNK_SIZE, CHUNK_OVERLAP
 
+logger = logging.getLogger(__name__)
+
+
+class ChunkService:
+
+    def __init__(self):
         self.splitter = RecursiveCharacterTextSplitter(
-            chunk_size = CHUNK_SIZE,
+            chunk_size=CHUNK_SIZE,
             chunk_overlap=CHUNK_OVERLAP
         )
 
-    #they only care about giving input and chunking happens but not how
-    def split_documents(self, documents: List[Document]) -> List[Document]:
-        
+    def split_documents(self, documents):
+
         if not documents:
             logger.warning("No documents to split.")
-            return list()
-        
-        logger.info(f"Splitting {len(documents)} documents...")
+            return []
+
         chunks = self.splitter.split_documents(documents)
-        logger.info(f"Generated {len(chunks)} chunks.")
+
+        counters = {}
+
+        for chunk in chunks:
+
+            source = chunk.metadata.get("source")
+
+            if source not in counters:
+                counters[source] = 0
+
+            chunk.metadata["chunk_index"] = counters[source]
+
+            counters[source] += 1
+
+        logger.info(
+            "Created %d chunks from documents.",
+            len(chunks)
+        )
+
         return chunks

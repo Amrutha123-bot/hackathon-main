@@ -4,49 +4,113 @@
 #I/P - user question - O/P - list of documents (relevant chunks)
 #dependency -vector service(don't know whether it is Chroma or FAISS or even the embeddings-abstraction), settings.py
 #this module will use the retriever from the vector service
+# import logging
+# from typing import List
+# from langchain_core.documents import Document
+# from services.vector_service import VectorService
+
+# logger = logging.getLogger(__name__)
+
+# class RetrievalService:
+
+#     def __init__(self):
+#         self.vector_service = VectorService()
+
+#     # def retrieve_documents(self, query: str, collection_name: str)-> List[Document]:#even empty list can be returned
+#     #     try:
+#     #         logger.info(f"RETRIEVAL COLLECTION = {collection_name}")
+#     #         retriever = self.vector_service.get_retriever(collection_name)
+#     #         relevant_documents = retriever.invoke(query)#no direct retrieve method from langchain
+#     #         logger.info(f"Retrieved {len(relevant_documents)} documents for the query: {query}")
+#     #         return relevant_documents
+#     #     except Exception as e:
+#     #         logger.error(f"Error retrieving documents for query '{query}': {e}")
+#     #         raise
+
+#     def retrieve_documents(self, query: str, collection_name: str) -> List[Document]:
+#         try:
+#             logger.info(f"RETRIEVAL COLLECTION = {collection_name}")
+
+#             retriever = self.vector_service.get_retriever(collection_name)
+
+#             relevant_documents = retriever.invoke(query)
+
+#             logger.info(f"Retrieved {len(relevant_documents)} documents")
+
+#             for i, doc in enumerate(relevant_documents):
+#                 logger.info(
+#                     f"RESULT {i+1}: "
+#                     f"source={doc.metadata.get('source')}, "
+#                     f"file_path={doc.metadata.get('file_path')}, "
+#                     f"collection={doc.metadata.get('collection_name')}"
+#                 )
+
+#             return relevant_documents
+
+#         except Exception as e:
+#             logger.error(f"Error retrieving documents: {e}")
+#             raise
 import logging
 from typing import List
+
 from langchain_core.documents import Document
 from services.vector_service import VectorService
 
 logger = logging.getLogger(__name__)
 
+
 class RetrievalService:
 
-    def __init__(self):
-        self.vector_service = VectorService()
+    def __init__(self, supabase):
+        self.vector_service = VectorService(supabase)
 
-    # def retrieve_documents(self, query: str, collection_name: str)-> List[Document]:#even empty list can be returned
-    #     try:
-    #         logger.info(f"RETRIEVAL COLLECTION = {collection_name}")
-    #         retriever = self.vector_service.get_retriever(collection_name)
-    #         relevant_documents = retriever.invoke(query)#no direct retrieve method from langchain
-    #         logger.info(f"Retrieved {len(relevant_documents)} documents for the query: {query}")
-    #         return relevant_documents
-    #     except Exception as e:
-    #         logger.error(f"Error retrieving documents for query '{query}': {e}")
-    #         raise
+    def retrieve_documents(
+        self,
+        query: str,
+        document_ids: list[str] | None = None,
+        top_k: int | None = None
+    ) -> List[Document]:
 
-    def retrieve_documents(self, query: str, collection_name: str) -> List[Document]:
-        try:
-            logger.info(f"RETRIEVAL COLLECTION = {collection_name}")
+        """
+        Retrieve relevant chunks from PostgreSQL + pgvector
+        and convert them into LangChain Document objects.
+        """
 
-            retriever = self.vector_service.get_retriever(collection_name)
+        if not query or not query.strip():
+            raise ValueError("Query cannot be empty.")
 
-            relevant_documents = retriever.invoke(query)
+        results = self.vector_service.search(
+            query=query,
+            document_ids=document_ids,
+            top_k=top_k
+        )
 
-            logger.info(f"Retrieved {len(relevant_documents)} documents")
+        logger.info(
+            "Retrieved %d relevant chunks.",
+            len(results)
+        )
 
-            for i, doc in enumerate(relevant_documents):
-                logger.info(
-                    f"RESULT {i+1}: "
-                    f"source={doc.metadata.get('source')}, "
-                    f"file_path={doc.metadata.get('file_path')}, "
-                    f"collection={doc.metadata.get('collection_name')}"
-                )
+        documents = []
 
-            return relevant_documents
+        for result in results:
 
-        except Exception as e:
-            logger.error(f"Error retrieving documents: {e}")
-            raise
+            document = Document(
+                page_content=result["content"],
+                metadata={
+                    "document_id": result["document_id"],
+                    "chunk_id": result["id"],
+                    "chunk_index": result["chunk_index"],
+                    "source": result["filename"],
+                    "page": result["page_number"],
+                    "similarity": result["similarity"],
+                }
+            )
+
+            documents.append(document)
+
+        logger.info(
+            "Converted %d retrieved chunks into Document objects.",
+            len(documents)
+        )
+
+        return documents

@@ -6,32 +6,35 @@
 #we are using a hybrid embedding model
 
 #we shouldn't care if huggingface, gemini, openai this is called as ABSTRACTION
-import logging
-from config.settings import (EMBEDDING_PROVIDER, EMBEDDING_MODEL)
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-#text is converted to vector here
-logger=logging.getLogger(__name__)
-#this embedding model doesn't store embeddings it only generates them. Initializing it once avoids repeated obj creation, reduces overhead and allows the same obj instance to be used throughout the lifetime of the application- storing is done by vector database
+from config.settings import (
+    EMBEDDING_PROVIDER,
+    EMBEDDING_MODEL,
+    EMBEDDING_DIMENSION
+)
+
 class EmbeddingService:
-    #we are caching configuration inside the object
+
     def __init__(self):
-        self.provider = EMBEDDING_PROVIDER#creator of embedding model - the service
-        self.model_name = EMBEDDING_MODEL#which model should that provider use
+        self.provider = EMBEDDING_PROVIDER
+        self.model_name = EMBEDDING_MODEL
+        self.dimension = EMBEDDING_DIMENSION
         self.embedding_model = None
-        
+
     def get_embedding_model(self):
 
-        try:
-            logger.info(f"Initializing {self.provider} embedding model")
-            if self.embedding_model is not None:
-                return self.embedding_model#returning the existing model if present
-            
-            else:#the FACTORY PATTERN - creates diff objects based on the config like openai or azure etc - based on the configuration appropriate embedding model will be created
-                if self.provider == "gemini":
-                    self.embedding_model=GoogleGenerativeAIEmbeddings(model=self.model_name)
-                    return self.embedding_model
-                else:
-                    raise ValueError(f"Unsupported embedding provider: {self.provider}")
-        except Exception as e:
-                logger.error(f"Failed to initialize embedding model: {e}")
-#returns the embedding model that can be used for embedding the embedding will be done by the chroma internally based on the model given by this module
+        if self.embedding_model is not None:
+            return self.embedding_model
+
+        if self.provider == "gemini":
+
+            self.embedding_model = GoogleGenerativeAIEmbeddings(
+                model=self.model_name,
+                output_dimensionality=self.dimension
+            )
+
+            return self.embedding_model
+
+        raise ValueError(
+            f"Unsupported embedding provider: {self.provider}"
+        )

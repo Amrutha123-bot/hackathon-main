@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
-
+console.log("API BASE URL:", BASE_URL);
 /**
  * Get the current user's access token
  */
@@ -98,7 +98,7 @@ export async function deleteDocument(documentId) {
 /**
  * Ask a question
  */
-export async function askQuestion(question, collectionName) {
+export async function askQuestion(question, documentIds) {
     const token = await getAccessToken();
 
     const response = await fetch(`${BASE_URL}/ask`, {
@@ -109,7 +109,7 @@ export async function askQuestion(question, collectionName) {
         },
         body: JSON.stringify({
             question,
-            collection_name: collectionName,
+            document_ids: documentIds
         }),
     });
 
